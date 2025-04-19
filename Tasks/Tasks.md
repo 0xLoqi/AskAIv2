@@ -90,7 +90,7 @@ tickets:
 
 - id: 01-05
   title: "Pin toggle" 🚧
-  context: "src/UI"
+  context: "src/UI"  
   tasks:
     - "Add pin icon, bool _isPinned"
   definition_of_done:

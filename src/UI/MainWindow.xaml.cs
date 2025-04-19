@@ -88,6 +88,7 @@ public partial class MainWindow : Window
         if (_overlayWindow == null)
         {
             _overlayWindow = new Overlay();
+            _overlayWindow.Owner = this;
             var mousePos = System.Windows.Forms.Control.MousePosition;
             _overlayWindow.Left = mousePos.X;
             _overlayWindow.Top = mousePos.Y;
@@ -96,7 +97,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _overlayWindow.SafeClose();
+            _overlayWindow.Close();
             _overlayWindow = null;
         }
     }
