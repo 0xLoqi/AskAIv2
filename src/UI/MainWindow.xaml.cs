@@ -90,8 +90,33 @@ public partial class MainWindow : Window
             _overlayWindow = new Overlay();
             _overlayWindow.Owner = this;
             var mousePos = System.Windows.Forms.Control.MousePosition;
-            _overlayWindow.Left = mousePos.X;
-            _overlayWindow.Top = mousePos.Y;
+
+            // Find the screen containing the mouse
+            var screen = System.Windows.Forms.Screen.FromPoint(mousePos);
+            var bounds = screen.WorkingArea;
+
+            // Get DPI scaling for the screen
+            double dpiScale = 1.0;
+            var source = PresentationSource.FromVisual(this);
+            if (source != null)
+                dpiScale = source.CompositionTarget.TransformToDevice.M11;
+
+            // Clamp overlay inside screen bounds
+            double overlayWidth = _overlayWindow.Width * dpiScale;
+            double overlayHeight = _overlayWindow.Height * dpiScale;
+            double left = mousePos.X;
+            double top = mousePos.Y;
+            if (left + overlayWidth > bounds.Right)
+                left = bounds.Right - overlayWidth;
+            if (top + overlayHeight > bounds.Bottom)
+                top = bounds.Bottom - overlayHeight;
+            if (left < bounds.Left)
+                left = bounds.Left;
+            if (top < bounds.Top)
+                top = bounds.Top;
+
+            _overlayWindow.Left = left / dpiScale;
+            _overlayWindow.Top = top / dpiScale;
             _overlayWindow.Show();
             _overlayWindow.Closed += (s, args) => { _overlayWindow = null; };
         }
