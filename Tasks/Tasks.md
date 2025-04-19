@@ -97,7 +97,7 @@ tickets:
     - "Pinned window persists"
 
 - id: 01-06
-  title: "Multi‑monitor & DPI support" 🚧
+  title: "Multi‑monitor & DPI support" ✔️
   context: "src/UI"
   tasks:
     - "Use `VisualTreeHelper.GetDpi` and `Screen.AllScreens`"
