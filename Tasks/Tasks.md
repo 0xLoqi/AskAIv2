@@ -109,7 +109,7 @@ tickets:
 # 2 ─ Chat Basics
 # ───────────────────────────────────────────────
 - id: 02-01
-  title: "Add input TextBox"
+  title: "Add input TextBox" ✔️
   context: "src/UI"
   tasks:
     - "Dock TextBox bottom; Enter event"
