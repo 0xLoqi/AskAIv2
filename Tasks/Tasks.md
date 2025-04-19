@@ -89,7 +89,7 @@ tickets:
     - "Click outside hides"
 
 - id: 01-05
-  title: "Pin toggle" 🚧
+  title: "Pin toggle" ✔️
   context: "src/UI"  
   tasks:
     - "Add pin icon, bool _isPinned"
@@ -97,7 +97,7 @@ tickets:
     - "Pinned window persists"
 
 - id: 01-06
-  title: "Multi‑monitor & DPI support"
+  title: "Multi‑monitor & DPI support" 🚧
   context: "src/UI"
   tasks:
     - "Use `VisualTreeHelper.GetDpi` and `Screen.AllScreens`"
