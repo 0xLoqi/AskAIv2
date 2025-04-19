@@ -117,7 +117,7 @@ tickets:
     - "Typing logs message"
 
 - id: 02-02
-  title: "Chat list control"
+  title: "Chat list control" ✔️
   context: "src/UI"
   tasks:
     - "ObservableCollection<Message> + ItemsControl"
@@ -125,7 +125,7 @@ tickets:
     - "Hardcoded messages show"
 
 - id: 02-03
-  title: "Markdown renderer"
+  title: "Markdown renderer" ✔️
   context: "src/UI"
   tasks:
     - "NuGet Markdown.Xaml; use for assistant replies"
@@ -133,7 +133,7 @@ tickets:
     - "**bold** renders"
 
 - id: 02-04
-  title: "System prompt constant"
+  title: "System prompt constant" ✔️
   context: "src/Core"
   tasks:
     - "PromptTemplate.cs with default system prompt"
