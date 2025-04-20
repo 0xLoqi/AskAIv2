@@ -109,7 +109,7 @@ tickets:
 # 2 ─ Chat Basics
 # ───────────────────────────────────────────────
 - id: 02-01
-  title: "Add input TextBox" ✔️
+  title: "Add input TextBox" 
   context: "src/UI"
   tasks:
     - "Dock TextBox bottom; Enter event"
@@ -117,7 +117,7 @@ tickets:
     - "Typing logs message"
 
 - id: 02-02
-  title: "Chat list control" ✔️
+  title: "Chat list control" 
   context: "src/UI"
   tasks:
     - "ObservableCollection<Message> + ItemsControl"
@@ -152,7 +152,7 @@ tickets:
     - "Key accessible in code"
 
 - id: 03-02
-  title: "ChatClient wrapper"
+  title: "ChatClient wrapper" ✔️
   context: "src/Core"
   tasks:
     - "SendAsync(List<Msg>) using GPT‑4‑Turbo"
@@ -160,7 +160,7 @@ tickets:
     - "Unit test gets non‑null reply"
 
 - id: 03-03
-  title: "Wire send"
+  title: "Wire send" ✔️
   context: "src/UI"
   tasks:
     - "On Enter → ChatClient → push reply"

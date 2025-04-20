@@ -16,13 +16,15 @@
         ResizeMode="NoResize">
     <Border Padding="8" Background="#FF171717" CornerRadius="8">
         <Grid>
-            <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}" Margin="0,0,0,40">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <md:MarkdownViewer Markdown="{Binding Text}" Margin="16,4,16,4" Foreground="White" FontSize="16"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto" Margin="0,0,0,40" MaxHeight="180">
+                <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <md:MarkdownViewer Markdown="{Binding Text}" Margin="16,4,16,4" Foreground="White" FontSize="16"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
             <ToggleButton x:Name="PinButton"
                           Width="18" Height="18"
                           HorizontalAlignment="Left" VerticalAlignment="Top"
