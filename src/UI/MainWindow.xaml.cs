@@ -101,19 +101,11 @@ public partial class MainWindow : Window
             if (source != null)
                 dpiScale = source.CompositionTarget.TransformToDevice.M11;
 
-            // Clamp overlay inside screen bounds
+            // Center overlay in the screen
             double overlayWidth = _overlayWindow.Width * dpiScale;
             double overlayHeight = _overlayWindow.Height * dpiScale;
-            double left = mousePos.X;
-            double top = mousePos.Y;
-            if (left + overlayWidth > bounds.Right)
-                left = bounds.Right - overlayWidth;
-            if (top + overlayHeight > bounds.Bottom)
-                top = bounds.Bottom - overlayHeight;
-            if (left < bounds.Left)
-                left = bounds.Left;
-            if (top < bounds.Top)
-                top = bounds.Top;
+            double left = bounds.Left + (bounds.Width - overlayWidth) / 2.0;
+            double top = bounds.Top + (bounds.Height - overlayHeight) / 2.0;
 
             _overlayWindow.Left = left / dpiScale;
             _overlayWindow.Top = top / dpiScale;

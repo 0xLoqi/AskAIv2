@@ -14,7 +14,7 @@
         Background="#01000000" Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize">
-    <Border Padding="8" Background="#FF171717" CornerRadius="8">
+    <Border Padding="8" Background="#FF171717" CornerRadius="8" MouseLeftButtonDown="OverlayBorder_MouseLeftButtonDown">
         <Grid>
             <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto" Margin="0,0,0,40" MaxHeight="180">
                 <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
