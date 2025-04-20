@@ -1,4 +1,4 @@
-#  ⚡️ SkaAI • Complete Kanban Backlog  (copy‑paste into your AI runner / IDE)
+#  ⚡️ SkAi • Complete Kanban Backlog  (copy‑paste into your AI runner / IDE)
 #  Includes core roadmap + extra security, CI, auto‑update, and polish tickets.
 
 tickets:
@@ -10,7 +10,7 @@ tickets:
   title: "Init repo & solution" ✔️
   context: "/"
   tasks:
-    - "dotnet new sln -n SkaAI"
+    - "dotnet new sln -n SkAi"
     - "mkdir src tests"
   definition_of_done:
     - "git status clean"
@@ -170,7 +170,7 @@ tickets:
 # ───────────────────────────────────────────────
 # 4 ─ Voice I/O
 # ───────────────────────────────────────────────
-- id: 04-01
+- id: 04-01 
   title: "AudioRecorder"
   context: "src/Voice"
   tasks:

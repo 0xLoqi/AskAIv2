@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "src\Core\Core.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "src\UI\UI.csproj", "{43A7D407-A5D6-484F-8649-0D86E5770BA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voice", "src\Voice\Voice.csproj", "{AB15FC0C-D790-45EA-9277-865AB7677CF0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{43A7D407-A5D6-484F-8649-0D86E5770BA0}.Release|x64.Build.0 = Release|Any CPU
 		{43A7D407-A5D6-484F-8649-0D86E5770BA0}.Release|x86.ActiveCfg = Release|Any CPU
 		{43A7D407-A5D6-484F-8649-0D86E5770BA0}.Release|x86.Build.0 = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|x64.Build.0 = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +64,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A0F0FCE0-A186-4285-A44F-971C74139216} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{43A7D407-A5D6-484F-8649-0D86E5770BA0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{AB15FC0C-D790-45EA-9277-865AB7677CF0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -2,5 +2,5 @@ namespace Core;
 
 public static class PromptTemplate
 {
-    public const string DefaultSystemPrompt = "You are SkaAI, a helpful assistant.";
+    public const string DefaultSystemPrompt = "You are SkAi, a helpful assistant.";
 } 
