@@ -87,9 +87,11 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="AskAI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
                 <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
+                <ToggleButton x:Name="PinButton" Grid.Column="2" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
             </Grid>
         </Border>
         <!-- Screenshot Preview Chip (if present) -->
@@ -153,7 +155,7 @@
                 <Grid Grid.Column="1" VerticalAlignment="Center">
                     <TextBox Name="InputTextBox" VerticalAlignment="Center" Margin="0" KeyDown="InputTextBox_KeyDown" Height="32" FontSize="16" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center"/>
                     <TextBlock x:Name="InputPlaceholder"
-                               Text="Got a question? Just Ask!"
+                               Text="Type here..."
                                Foreground="#888"
                                FontSize="16"
                                Margin="8,0,0,0"
@@ -166,8 +168,7 @@
                 </Grid>
                 <Button x:Name="VoiceButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE720;" ToolTip="Voice input"/>
                 <Button x:Name="CameraButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE714;" ToolTip="Screenshot"/>
-                <ToggleButton x:Name="PinButton" Grid.Column="4" Width="40" Height="40" Margin="6,0,0,0" ToolTip="Pin overlay" FontFamily="Segoe Fluent Icons" FontSize="22" Content="&#xE718;" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="5" Width="40" Height="40" Margin="6,0,0,0" ToolTip="Voice reply" FontFamily="Segoe Fluent Icons" FontSize="22" Content="&#xE720;" IsChecked="True"/>
+                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="40" Height="40" Margin="6,0,0,0" ToolTip="Voice reply" FontSize="22" Content="🗣️" IsChecked="True" Background="Transparent" Foreground="White" BorderThickness="0"/>
             </Grid>
         </Border>
         <!-- Modal overlay for full-size screenshot preview (hidden by default) -->
