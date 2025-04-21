@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Contributing & Setup Guide
+
+This rule provides quick instructions for setting up the development environment and contributing to AskAI.
+
+## Setup
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/YOUR-USERNAME/AskAI.git
+   cd AskAI
+   ```
+2. Create a `.env` file in `src/Core`:
+   ```env
+   OPENAI_API_KEY=your-key-here
+   ```
+3. Build and run the application:
+   ```sh
+   dotnet run --project src/UI/UI.csproj
+   ```
+
+## Contributing
+
+- Press <kbd>Alt</kbd>+<kbd>Space</kbd> to open the overlay and verify changes.
+- Ensure code follows C# conventions.
+- Add tests to the `tests` directory.
+- Submit PRs against the `main` branch.
+

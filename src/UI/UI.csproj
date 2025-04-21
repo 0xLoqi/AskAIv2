@@ -3,11 +3,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Voice\Voice.csproj" />
+    <ProjectReference Include="..\Vision\Vision.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Markdig.Wpf" Version="0.5.0.1" />
     <PackageReference Include="Markdown.Xaml" Version="1.0.0" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
     <PackageReference Include="MouseKeyHook" Version="5.7.1" />
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="System.Speech" Version="9.0.4" />

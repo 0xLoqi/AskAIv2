@@ -202,6 +202,16 @@ tickets:
   definition_of_done:
     - "Assistant voice heard"
 
+- id: 04-04
+  title: "SpeechSynth speak‑back" ✔️
+  context: "src/Voice"
+  tasks:
+    - "AzureTTSService: SynthesizeToFileAsync(reply) using Azure TTS (upgrade from Windows SpeechSynthesizer)"
+  definition_of_done:
+    - "Assistant voice heard (via Azure TTS, WAV output)"
+  notes:
+    - "Azure TTS is now the default for speech output, replacing Windows SpeechSynthesizer."
+
 # ───────────────────────────────────────────────
 # 5 ─ Vision Q&A & Assets
 # ───────────────────────────────────────────────

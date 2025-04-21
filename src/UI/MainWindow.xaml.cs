@@ -26,9 +26,11 @@ public partial class MainWindow : Window
     private const uint VK_SPACE = 0x20;
     [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
     [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
 
     private Overlay? _overlayWindow;
     private HwndSource? _source;
+    private IntPtr _lastActiveWindow = IntPtr.Zero;
 
     public MainWindow()
     {
@@ -88,7 +90,26 @@ public partial class MainWindow : Window
     {
         if (_overlayWindow == null)
         {
-            _overlayWindow = new Overlay();
+            _lastActiveWindow = GetForegroundWindow();
+            // Capture screenshot before showing overlay
+            string screenshotPath = null;
+            if (_lastActiveWindow != IntPtr.Zero)
+            {
+                screenshotPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"active_window_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                try
+                {
+                    Vision.ScreenGrabber.CaptureWindowToPng(_lastActiveWindow, screenshotPath);
+                }
+                catch
+                {
+                    try
+                    {
+                        Vision.ScreenGrabber.CaptureScreenToPng(screenshotPath);
+                    }
+                    catch { screenshotPath = null; }
+                }
+            }
+            _overlayWindow = new Overlay(_lastActiveWindow, screenshotPath);
             _overlayWindow.Owner = this;
             var mousePos = System.Windows.Forms.Control.MousePosition;
 

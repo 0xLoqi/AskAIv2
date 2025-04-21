@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Guide
+
+This rule outlines the primary directories and key files in the AskAI project to simplify navigation.
+
+- **src/Core**: Core API integration and business logic.
+  - [.env](mdc:src/Core/.env): Environment variables (e.g., OPENAI_API_KEY).
+  - [ChatClient.cs](mdc:src/Core/ChatClient.cs): Manages communication with OpenAI.
+  - [PromptTemplate.cs](mdc:src/Core/PromptTemplate.cs): Defines prompt templates.
+
+- **src/UI**: WPF-based user interface.
+  - [App.xaml](mdc:src/UI/App.xaml): Application entry XAML.
+  - [MainWindow.xaml](mdc:src/UI/MainWindow.xaml): Main window layout.
+  - [Overlay.xaml](mdc:src/UI/Overlay.xaml): Overlay layout.
+  - [Overlay.xaml.cs](mdc:src/UI/Overlay.xaml.cs): Overlay behavior and hotkey handling.
+  - [OverlayWindow.cs](mdc:src/UI/OverlayWindow.cs): Overlay window logic.
+
+- **src/Voice**: Voice input (Whisper) and output (TTS).
+- **services/orpheus-tts**: Third-party TTS service adapter.
+- **src/EnvTest**: Environment testing and samples.
+- **docs**: Project documentation (e.g., [README.md](mdc:README.md)).
+- **tests**: Automated test suites.
+- **Tasks**: Task automation scripts.
+
+Use this guide to quickly locate and understand the main components.
+

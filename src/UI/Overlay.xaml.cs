@@ -11,6 +11,10 @@ using System.Diagnostics;
 using dotenv.net;
 using System.Threading.Tasks;
 using System.Speech.Synthesis;
+using System.Linq;
+using NAudio.Wave;
+using Vision;
+using System.Runtime.InteropServices;
 
 namespace UI
 {
@@ -20,6 +24,7 @@ namespace UI
         {
             public string Role { get; set; } = string.Empty;
             public string Text { get; set; } = string.Empty;
+            public string? ImagePath { get; set; } // Optional: path to image for preview
         }
 
         public ObservableCollection<Message> Messages { get; set; } = new ObservableCollection<Message>
@@ -34,22 +39,47 @@ namespace UI
         private AudioRecorder? _recorder;
         private Stopwatch? _pttStopwatch;
         private string? _lastTempFile;
+        private AzureTTSService? _ttsService;
+        private IntPtr _previousActiveWindow = IntPtr.Zero;
+        private string? _lastScreenshotPath;
+        private Window? _screenshotPreviewWindow;
 
-        public Overlay()
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        public Overlay(IntPtr previousActiveWindow, string? screenshotPath)
         {
-            DotEnv.Load(); // Ensure .env is loaded for API keys
-            Console.WriteLine("Current Directory: " + Environment.CurrentDirectory);
-            Console.WriteLine("OPENAI_API_KEY after DotEnv.Load: " + Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
+            DotEnv.Load();
+            string subscriptionKey = "cfJxVsZz1MxgurhmTvBkT2W3zA7vT8TD86pqXuae0iuZK9QRWsiSJQQJ99BDACLArgHXJ3w3AAAYACOGIJlj";
+            string subscriptionRegion = "southcentralus";
+            _ttsService = new AzureTTSService(subscriptionKey, subscriptionRegion);
+            _previousActiveWindow = previousActiveWindow;
+            _lastScreenshotPath = screenshotPath;
             InitializeComponent();
             Loaded += Overlay_Loaded;
             Unloaded += Overlay_Unloaded;
+            CameraButton.Click += CameraButton_Click;
+            InputTextBox.TextChanged += InputTextBox_TextChanged;
         }
+
+        public Overlay(IntPtr previousActiveWindow) : this(previousActiveWindow, null) { }
+
+        public Overlay() : this(IntPtr.Zero, null) { }
 
         private void Overlay_Loaded(object sender, RoutedEventArgs e)
         {
             _globalHook = Hook.GlobalEvents();
             _globalHook.KeyDown += GlobalHook_KeyDown;
             _globalHook.KeyUp += GlobalHook_KeyUp;
+
+            if (!string.IsNullOrEmpty(_lastScreenshotPath) && System.IO.File.Exists(_lastScreenshotPath))
+            {
+                ShowScreenshotAttachedIndicator(_lastScreenshotPath);
+            }
+            else
+            {
+                HideScreenshotAttachedIndicator();
+            }
         }
 
         private void Overlay_Unloaded(object sender, RoutedEventArgs e)
@@ -100,10 +130,22 @@ namespace UI
                         Messages.Add(new Message { Role = "assistant", Text = reply });
                         _history.Add(new Msg { Role = "assistant", Content = reply });
                         ChatScrollViewer.ScrollToEnd();
-                        // Speak assistant reply
-                        using (var synth = new SpeechSynthesizer())
+                        // Speak assistant reply using AzureTTSService and NAudio
+                        if (_ttsService != null)
                         {
-                            synth.SpeakAsync(reply);
+                            string tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"assistant_{Guid.NewGuid()}.wav");
+                            await _ttsService.SynthesizeToFileAsync(reply, "affectionate", tempWav);
+                            using (var audioFile = new AudioFileReader(tempWav))
+                            using (var outputDevice = new WaveOutEvent())
+                            {
+                                outputDevice.Init(audioFile);
+                                outputDevice.Play();
+                                while (outputDevice.PlaybackState == PlaybackState.Playing)
+                                {
+                                    await Task.Delay(100);
+                                }
+                            }
+                            try { System.IO.File.Delete(tempWav); } catch { }
                         }
                     }
                     else
@@ -134,6 +176,24 @@ namespace UI
 
                     // Auto-scroll to bottom
                     ChatScrollViewer.ScrollToEnd();
+
+                    // Speak assistant reply using AzureTTSService and NAudio
+                    if (_ttsService != null)
+                    {
+                        string tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"assistant_{Guid.NewGuid()}.wav");
+                        await _ttsService.SynthesizeToFileAsync(reply, "affectionate", tempWav);
+                        using (var audioFile = new AudioFileReader(tempWav))
+                        using (var outputDevice = new WaveOutEvent())
+                        {
+                            outputDevice.Init(audioFile);
+                            outputDevice.Play();
+                            while (outputDevice.PlaybackState == PlaybackState.Playing)
+                            {
+                                await Task.Delay(100);
+                            }
+                        }
+                        try { System.IO.File.Delete(tempWav); } catch { }
+                    }
                 }
             }
         }
@@ -144,6 +204,106 @@ namespace UI
             {
                 DragMove();
             }
+        }
+
+        private async void CameraButton_Click(object sender, RoutedEventArgs e)
+        {
+            string outputPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"active_window_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            try
+            {
+                if (_previousActiveWindow != IntPtr.Zero)
+                {
+                    Vision.ScreenGrabber.CaptureWindowToPng(_previousActiveWindow, outputPath);
+                    _lastScreenshotPath = outputPath;
+                    ShowScreenshotAttachedIndicator(outputPath);
+                    Messages.Add(new Message { Role = "system", Text = $"🧠 Screenshot sent to AI." });
+                }
+                else
+                {
+                    Vision.ScreenGrabber.CaptureActiveWindowToPng(outputPath);
+                    _lastScreenshotPath = outputPath;
+                    ShowScreenshotAttachedIndicator(outputPath);
+                    Messages.Add(new Message { Role = "system", Text = $"🧠 Screenshot sent to AI." });
+                }
+            }
+            catch (Exception ex)
+            {
+                Messages.Add(new Message { Role = "system", Text = $"❌ Screenshot failed: {ex.Message}" });
+            }
+            await Task.CompletedTask;
+        }
+
+        private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            InputPlaceholder.Visibility = string.IsNullOrEmpty(InputTextBox.Text)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void ShowScreenshotAttachedIndicator(string imagePath)
+        {
+            ScreenshotChipBorder.Visibility = Visibility.Visible;
+            bool exists = !string.IsNullOrEmpty(imagePath) && System.IO.File.Exists(imagePath);
+            var previewBtn = ScreenshotAttachedPanel.Children.OfType<Button>().FirstOrDefault(b => (string?)b.Content == "Preview");
+            if (previewBtn != null) previewBtn.IsEnabled = exists;
+        }
+
+        private void HideScreenshotAttachedIndicator()
+        {
+            ScreenshotChipBorder.Visibility = Visibility.Collapsed;
+            _lastScreenshotPath = null;
+            var previewBtn = ScreenshotAttachedPanel.Children.OfType<Button>().FirstOrDefault(b => (string?)b.Content == "Preview");
+            if (previewBtn != null) previewBtn.IsEnabled = false;
+        }
+
+        private void PreviewScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastScreenshotPath) || !System.IO.File.Exists(_lastScreenshotPath))
+            {
+                Messages.Add(new Message { Role = "system", Text = "No screenshot to preview." });
+                return;
+            }
+            if (_screenshotPreviewWindow == null)
+            {
+                _screenshotPreviewWindow = new Window
+                {
+                    Title = "Screenshot Preview",
+                    Width = 800,
+                    Height = 500,
+                    Content = new System.Windows.Controls.Image
+                    {
+                        Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath)),
+                        Stretch = System.Windows.Media.Stretch.Uniform
+                    },
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this,
+                    ResizeMode = ResizeMode.CanResize,
+                    WindowStyle = WindowStyle.ToolWindow
+                };
+                _screenshotPreviewWindow.Closed += (s, args) => _screenshotPreviewWindow = null;
+            }
+            _screenshotPreviewWindow.Show();
+            _screenshotPreviewWindow.Activate();
+        }
+
+        private void RemoveScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideScreenshotAttachedIndicator();
+            Messages.Add(new Message { Role = "system", Text = "Screenshot removed from context. Only text will be sent." });
+        }
+
+        private void SendImageToAI_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string imagePath && !string.IsNullOrEmpty(imagePath))
+            {
+                Messages.Add(new Message { Role = "system", Text = $"🧠 Image sent to AI: {imagePath}" });
+                // TODO: Integrate with VisionClient or AI pipeline
+            }
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 } 
