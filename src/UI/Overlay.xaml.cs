@@ -15,6 +15,7 @@ using System.Linq;
 using NAudio.Wave;
 using Vision;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Animation;
 
 namespace UI
 {
@@ -29,7 +30,7 @@ namespace UI
 
         public ObservableCollection<Message> Messages { get; set; } = new ObservableCollection<Message>
         {
-            new Message { Role = "assistant", Text = "Hey. I'm SkAI" },
+            new Message { Role = "assistant", Text = "Hi, I'm SkAI" },
             new Message { Role = "assistant", Text = "Type below and press Enter." },
         };
 
@@ -42,7 +43,10 @@ namespace UI
         private AzureTTSService? _ttsService;
         private IntPtr _previousActiveWindow = IntPtr.Zero;
         private string? _lastScreenshotPath;
-        private Window? _screenshotPreviewWindow;
+        private double _originalTop = -1;
+        private double _originalHeight = -1;
+        private double _defaultTop = -1;
+        private double _defaultLeft = -1;
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -50,8 +54,8 @@ namespace UI
         public Overlay(IntPtr previousActiveWindow, string? screenshotPath)
         {
             DotEnv.Load();
-            string subscriptionKey = "cfJxVsZz1MxgurhmTvBkT2W3zA7vT8TD86pqXuae0iuZK9QRWsiSJQQJ99BDACLArgHXJ3w3AAAYACOGIJlj";
-            string subscriptionRegion = "southcentralus";
+            string subscriptionKey = "AuXoWdlB6tJmdAJfx4Epl5H18B31WYPuAZfbb5ZtT074WZWqOZzaJQQJ99BDAC1i4TkXJ3w3AAAYACOG5GcA";
+            string subscriptionRegion = "centralus";
             _ttsService = new AzureTTSService(subscriptionKey, subscriptionRegion);
             _previousActiveWindow = previousActiveWindow;
             _lastScreenshotPath = screenshotPath;
@@ -71,6 +75,9 @@ namespace UI
             _globalHook = Hook.GlobalEvents();
             _globalHook.KeyDown += GlobalHook_KeyDown;
             _globalHook.KeyUp += GlobalHook_KeyUp;
+
+            if (_defaultTop < 0) _defaultTop = this.Top;
+            if (_defaultLeft < 0) _defaultLeft = this.Left;
 
             if (!string.IsNullOrEmpty(_lastScreenshotPath) && System.IO.File.Exists(_lastScreenshotPath))
             {
@@ -263,27 +270,18 @@ namespace UI
                 Messages.Add(new Message { Role = "system", Text = "No screenshot to preview." });
                 return;
             }
-            if (_screenshotPreviewWindow == null)
-            {
-                _screenshotPreviewWindow = new Window
-                {
-                    Title = "Screenshot Preview",
-                    Width = 800,
-                    Height = 500,
-                    Content = new System.Windows.Controls.Image
-                    {
-                        Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath)),
-                        Stretch = System.Windows.Media.Stretch.Uniform
-                    },
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = this,
-                    ResizeMode = ResizeMode.CanResize,
-                    WindowStyle = WindowStyle.ToolWindow
-                };
-                _screenshotPreviewWindow.Closed += (s, args) => _screenshotPreviewWindow = null;
-            }
-            _screenshotPreviewWindow.Show();
-            _screenshotPreviewWindow.Activate();
+            ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
+            ScreenshotPreviewPanel.Visibility = Visibility.Visible;
+            _originalTop = this.Top;
+            _originalHeight = this.Height;
+        }
+
+        private void ScreenshotPreviewPanel_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            ScreenshotPreviewPanel.Visibility = Visibility.Collapsed;
+            ScreenshotPreviewImage.Source = null;
+            if (_defaultTop > -1) this.Top = _defaultTop;
+            if (_defaultLeft > -1) this.Left = _defaultLeft;
         }
 
         private void RemoveScreenshotButton_Click(object sender, RoutedEventArgs e)
