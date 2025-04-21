@@ -44,6 +44,20 @@ namespace UI
         private double _defaultTop = -1;
         private double _defaultLeft = -1;
 
+        private static readonly string[] Slogans = new[]
+        {
+            "- Ask Anything, Anywhere, Anytime",
+            "- Curious? Just Ask.",
+            "- Your AI Copilot, One Shortcut Away",
+            "- Stuck? Get Instant Answers.",
+            "- Type Less, Know More.",
+            "- Unlock Knowledge. Instantly.",
+            "- No Limits. Just Ask.",
+            "- AI at Your Fingertips.",
+            "- Ask. Learn. Repeat.",
+            "- The Answer is a Shortcut Away."
+        };
+
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
@@ -75,6 +89,12 @@ namespace UI
             if (_defaultTop < 0) _defaultTop = this.Top;
             if (_defaultLeft < 0) _defaultLeft = this.Left;
 
+            // Set a random slogan using FindName to avoid linter error
+            var rand = new System.Random();
+            var sloganTextBlock = this.FindName("SloganText") as System.Windows.Controls.TextBlock;
+            if (sloganTextBlock != null)
+                sloganTextBlock.Text = Slogans[rand.Next(Slogans.Length)];
+
             if (!string.IsNullOrEmpty(_lastScreenshotPath) && System.IO.File.Exists(_lastScreenshotPath))
             {
                 ShowScreenshotAttachedIndicator(_lastScreenshotPath);
@@ -86,6 +106,9 @@ namespace UI
 
             this.SizeChanged += (s, ev) => CenterOverlayOnScreen();
             Dispatcher.BeginInvoke(new Action(CenterOverlayOnScreen), DispatcherPriority.ApplicationIdle);
+
+            // Ensure placeholder is set correctly on load
+            InputTextBox_TextChanged(InputTextBox, null);
         }
 
         private void Overlay_Unloaded(object sender, RoutedEventArgs e)
@@ -258,7 +281,15 @@ namespace UI
             if (string.IsNullOrEmpty(_lastScreenshotPath) || !System.IO.File.Exists(_lastScreenshotPath))
                 return;
             ScreenshotModal.Visibility = Visibility.Visible;
-            ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
+            MessageBox.Show(_lastScreenshotPath, "Debug: Screenshot Path");
+            try
+            {
+                ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load screenshot: " + ex.Message);
+            }
         }
 
         private void ScreenshotModal_MouseDown(object sender, MouseButtonEventArgs e)
