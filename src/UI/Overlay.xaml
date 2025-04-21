@@ -8,8 +8,7 @@
         xmlns:markdown="clr-namespace:Markdown.Xaml"
         xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         mc:Ignorable="d"
-        Width="640" MaxWidth="900" MaxHeight="900"
-        SizeToContent="Height"
+        Width="640" MaxWidth="900" SizeToContent="Height"
         ShowActivated="True"   Focusable="True"
         WindowStyle="None"     AllowsTransparency="True"
         Background="#80222222" Topmost="True"
@@ -57,16 +56,21 @@
         </Style>
         <!-- Modern ScrollBar Style -->
         <Style TargetType="ScrollBar">
-            <Setter Property="Width" Value="8"/>
+            <Setter Property="Width" Value="4"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#888"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
                         <Grid Background="{TemplateBinding Background}">
                             <Track Name="PART_Track" IsDirectionReversed="True">
                                 <Track.Thumb>
-                                    <Thumb Background="#444"/>
+                                    <Thumb Opacity="0.2">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="#444" CornerRadius="10" HorizontalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
                                 </Track.Thumb>
                             </Track>
                         </Grid>
@@ -77,97 +81,92 @@
     </local:OverlayWindow.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="32"/> <!-- Header bar -->
+            <RowDefinition Height="Auto"/> <!-- Screenshot chip -->
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <!-- Screenshot Preview Panel (top row, hidden by default) -->
-        <Border x:Name="ScreenshotPreviewPanel" Grid.Row="0" Background="#222" CornerRadius="16" Padding="12" Visibility="Collapsed" MouseDown="ScreenshotPreviewPanel_MouseDown">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#99000000" Opacity="0.7"/>
-            </Border.Effect>
-            <Image x:Name="ScreenshotPreviewImage" Stretch="Uniform" MaxWidth="640"/>
-        </Border>
-        <!-- Main Overlay UI (bottom row) -->
-        <Border Grid.Row="1" Padding="24" Background="#80222222" CornerRadius="16" MouseLeftButtonDown="OverlayBorder_MouseLeftButtonDown" Panel.ZIndex="20">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#99000000" Opacity="0.7"/>
-            </Border.Effect>
+        <!-- Modern Header Bar -->
+        <Border Grid.Row="0" Background="#232323" CornerRadius="8,8,0,0" Padding="0,0,0,0" Height="32" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <!-- Top Bar with Logo, Pin, and Close Button -->
-                <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="False">
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/UI;component/Assets/askai_logo.png" Height="32" Margin="0,0,8,0"/>
-                        <TextBlock Text="Ask.ai" FontWeight="Bold" FontSize="18" Foreground="#fff" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
-                        <ToggleButton x:Name="PinButton" Width="36" Height="36" Margin="0,0,8,0" ToolTip="Pin overlay" FontFamily="Segoe Fluent Icons" FontSize="18" Content="&#xE840;" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                        <Button x:Name="CloseButton" Style="{StaticResource IconButtonStyle}" Content="&#xE8BB;" ToolTip="Close"/>
-                    </StackPanel>
-                </DockPanel>
-                <!-- Chat Section -->
-                <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12" MaxHeight="320" Grid.Row="2">
-                    <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.Resources>
-                                        <Style TargetType="Border">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Role}" Value="user">
-                                                    <Setter Property="Background" Value="#2979FF"/>
-                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
-                                                    <Setter Property="Margin" Value="80,8,0,8"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Role}" Value="assistant">
-                                                    <Setter Property="Background" Value="#292929"/>
-                                                    <Setter Property="HorizontalAlignment" Value="Left"/>
-                                                    <Setter Property="Margin" Value="0,8,80,8"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Role}" Value="system">
-                                                    <Setter Property="Background" Value="#444"/>
-                                                    <Setter Property="HorizontalAlignment" Value="Center"/>
-                                                    <Setter Property="Margin" Value="0,8,0,8"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Grid.Resources>
-                                    <Border CornerRadius="10" Padding="16,10">
-                                        <md:MarkdownViewer Markdown="{Binding Text}" Foreground="White" FontSize="16"/>
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-                <!-- Input Section -->
-                <StackPanel Grid.Row="3" Margin="0,8,0,0">
-                    <!-- Screenshot Attached Indicator (modern chip above the input) -->
-                    <Border x:Name="ScreenshotChipBorder" Background="#292929" CornerRadius="12" Padding="8,4" Margin="0,0,0,4" Visibility="Collapsed">
-                        <StackPanel x:Name="ScreenshotAttachedPanel" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="Screenshot attached" Foreground="#eee" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button Content="Preview" Click="PreviewScreenshotButton_Click" Margin="0,0,8,0" Height="22"/>
-                            <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="22" Width="22"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="#232323" CornerRadius="8" Padding="4" Margin="0">
-                        <Grid>
-                            <TextBox Name="InputTextBox" VerticalAlignment="Bottom" Margin="0" KeyDown="InputTextBox_KeyDown" Height="36" FontSize="16" Background="#232323" Foreground="White" BorderThickness="0"/>
-                            <TextBlock x:Name="InputPlaceholder" Text="Gotta question? Just ask." Foreground="#888" FontSize="16" Margin="8,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
-                            <!-- Chat bar buttons -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0">
-                                <Button x:Name="VoiceButton" Style="{StaticResource IconButtonStyle}" Content="&#xE720;" ToolTip="Voice input"/>
-                                <Button x:Name="CameraButton" Style="{StaticResource IconButtonStyle}" Content="&#xE722;" ToolTip="Screenshot"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="AskAI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0"/>
             </Grid>
+        </Border>
+        <!-- Screenshot Preview Chip (if present) -->
+        <Border x:Name="ScreenshotChip" Grid.Row="1" Background="#292929" CornerRadius="12" Padding="4" Margin="0,0,0,4" Visibility="Collapsed" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image x:Name="ScreenshotThumbnail" Width="36" Height="36" Stretch="UniformToFill" Margin="0,0,4,0" Cursor="Hand" MouseLeftButtonUp="ScreenshotThumbnail_Click"/>
+                <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="22" Width="22"/>
+            </StackPanel>
+        </Border>
+        <!-- Message area with fade-out scroll -->
+        <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="400" Margin="0,0,0,4">
+            <StackPanel Orientation="Vertical" VerticalAlignment="Bottom">
+                <!-- Messages (newest at bottom) -->
+                <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Vertical"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="10" Padding="12,8" Margin="0,0,0,2" Background="#292929">
+                                <md:MarkdownViewer Markdown="{Binding Text}" Foreground="White" FontSize="16"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+            <ScrollViewer.OpacityMask>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#00FFFFFF" Offset="0.0"/>
+                    <GradientStop Color="#FFFFFFFF" Offset="0.1"/>
+                    <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
+                </LinearGradientBrush>
+            </ScrollViewer.OpacityMask>
+        </ScrollViewer>
+        <!-- Single chatbar at the bottom -->
+        <Border Grid.Row="3" Background="#232323" CornerRadius="8" Padding="4" Margin="0,0,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" VerticalAlignment="Center">
+                    <TextBox Name="InputTextBox" VerticalAlignment="Center" Margin="0" KeyDown="InputTextBox_KeyDown" Height="36" FontSize="16" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center"/>
+                    <TextBlock x:Name="InputPlaceholder"
+                               Text="Got a question? Just Ask!"
+                               Foreground="#888"
+                               FontSize="16"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Left"
+                               IsHitTestVisible="False"
+                               Visibility="Collapsed"
+                               Panel.ZIndex="1"
+                               Background="Transparent"/>
+                </Grid>
+                <Button x:Name="VoiceButton" Grid.Column="1" Style="{StaticResource IconButtonStyle}" Content="&#xE720;" ToolTip="Voice input"/>
+                <Button x:Name="CameraButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE714;" ToolTip="Screenshot"/>
+                <ToggleButton x:Name="PinButton" Grid.Column="3" Width="36" Height="36" Margin="6,0,0,0" ToolTip="Pin overlay" FontFamily="Segoe Fluent Icons" FontSize="18" Content="&#xE840;" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="36" Height="36" Margin="6,0,0,0" ToolTip="Voice reply" FontFamily="Segoe Fluent Icons" FontSize="18" Content="&#xE767;" IsChecked="True"/>
+            </Grid>
+        </Border>
+        <!-- Modal overlay for full-size screenshot preview (hidden by default) -->
+        <Border x:Name="ScreenshotModal" Background="#CC111111" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="1000" MouseDown="ScreenshotModal_MouseDown">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="#222" CornerRadius="16" Padding="12">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#99000000" Opacity="0.7"/>
+                </Border.Effect>
+                <Image x:Name="ScreenshotModalImage" Stretch="Uniform" MaxWidth="640"/>
+            </Border>
         </Border>
     </Grid>
 </local:OverlayWindow> 

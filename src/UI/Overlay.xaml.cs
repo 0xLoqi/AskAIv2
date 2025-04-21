@@ -28,11 +28,7 @@ namespace UI
             public string? ImagePath { get; set; } // Optional: path to image for preview
         }
 
-        public ObservableCollection<Message> Messages { get; set; } = new ObservableCollection<Message>
-        {
-            new Message { Role = "assistant", Text = "Hi, I'm SkAI" },
-            new Message { Role = "assistant", Text = "Type below and press Enter." },
-        };
+        public ObservableCollection<Message> Messages { get; set; } = new ObservableCollection<Message>();
 
         private readonly ChatClient _chatClient = new ChatClient();
         private readonly List<Msg> _history = new List<Msg>();
@@ -87,6 +83,9 @@ namespace UI
             {
                 HideScreenshotAttachedIndicator();
             }
+
+            this.SizeChanged += (s, ev) => CenterOverlayOnScreen();
+            Dispatcher.BeginInvoke(new Action(CenterOverlayOnScreen), DispatcherPriority.ApplicationIdle);
         }
 
         private void Overlay_Unloaded(object sender, RoutedEventArgs e)
@@ -108,7 +107,7 @@ namespace UI
                 _recorder = new AudioRecorder(_lastTempFile);
                 _pttStopwatch = Stopwatch.StartNew();
                 _recorder.StartRecording();
-                Messages.Add(new Message { Role = "system", Text = "🎤 Recording... (hold F8)" });
+                AddMessageAndScroll(new Message { Role = "system", Text = "🎤 Recording... (hold F8)" });
             }
         }
 
@@ -121,24 +120,23 @@ namespace UI
                 var heldMs = _pttStopwatch.ElapsedMilliseconds;
                 _recorder = null;
                 _pttStopwatch = null;
-                Messages.Add(new Message { Role = "system", Text = "🛑 Recording stopped." });
+                AddMessageAndScroll(new Message { Role = "system", Text = "🛑 Recording stopped." });
                 await Task.Delay(100); // Give time for file to be released
                 if (heldMs > 500 && _lastTempFile != null)
                 {
                     var whisper = new WhisperService();
-                    Messages.Add(new Message { Role = "system", Text = "⏳ Transcribing..." });
+                    AddMessageAndScroll(new Message { Role = "system", Text = "⏳ Transcribing..." });
                     var transcript = await whisper.TranscribeAsync(_lastTempFile);
                     try { System.IO.File.Delete(_lastTempFile); } catch { }
                     if (!string.IsNullOrWhiteSpace(transcript))
                     {
-                        Messages.Add(new Message { Role = "user", Text = transcript });
+                        AddMessageAndScroll(new Message { Role = "user", Text = transcript });
                         _history.Add(new Msg { Role = "user", Content = transcript });
                         var reply = await _chatClient.SendAsync(_history);
-                        Messages.Add(new Message { Role = "assistant", Text = reply });
+                        AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
                         _history.Add(new Msg { Role = "assistant", Content = reply });
-                        ChatScrollViewer.ScrollToEnd();
                         // Speak assistant reply using AzureTTSService and NAudio
-                        if (_ttsService != null)
+                        if (_ttsService != null && IsVoiceReplyEnabled)
                         {
                             string tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"assistant_{Guid.NewGuid()}.wav");
                             await _ttsService.SynthesizeToFileAsync(reply, "affectionate", tempWav);
@@ -157,12 +155,12 @@ namespace UI
                     }
                     else
                     {
-                        Messages.Add(new Message { Role = "system", Text = "❌ No speech detected." });
+                        AddMessageAndScroll(new Message { Role = "system", Text = "❌ No speech detected." });
                     }
                 }
                 else
                 {
-                    Messages.Add(new Message { Role = "system", Text = "⌛ Hold F8 longer for voice input." });
+                    AddMessageAndScroll(new Message { Role = "system", Text = "⌛ Hold F8 longer for voice input." });
                 }
             }
         }
@@ -174,18 +172,15 @@ namespace UI
                 var text = InputTextBox.Text;
                 if (!string.IsNullOrWhiteSpace(text))
                 {
-                    Messages.Add(new Message { Role = "user", Text = text });
+                    AddMessageAndScroll(new Message { Role = "user", Text = text });
                     _history.Add(new Msg { Role = "user", Content = text });
                     InputTextBox.Clear();
                     var reply = await _chatClient.SendAsync(_history);
-                    Messages.Add(new Message { Role = "assistant", Text = reply });
+                    AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
                     _history.Add(new Msg { Role = "assistant", Content = reply });
 
-                    // Auto-scroll to bottom
-                    ChatScrollViewer.ScrollToEnd();
-
                     // Speak assistant reply using AzureTTSService and NAudio
-                    if (_ttsService != null)
+                    if (_ttsService != null && IsVoiceReplyEnabled)
                     {
                         string tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"assistant_{Guid.NewGuid()}.wav");
                         await _ttsService.SynthesizeToFileAsync(reply, "affectionate", tempWav);
@@ -223,19 +218,17 @@ namespace UI
                     Vision.ScreenGrabber.CaptureWindowToPng(_previousActiveWindow, outputPath);
                     _lastScreenshotPath = outputPath;
                     ShowScreenshotAttachedIndicator(outputPath);
-                    Messages.Add(new Message { Role = "system", Text = $"🧠 Screenshot sent to AI." });
                 }
                 else
                 {
                     Vision.ScreenGrabber.CaptureActiveWindowToPng(outputPath);
                     _lastScreenshotPath = outputPath;
                     ShowScreenshotAttachedIndicator(outputPath);
-                    Messages.Add(new Message { Role = "system", Text = $"🧠 Screenshot sent to AI." });
                 }
             }
             catch (Exception ex)
             {
-                Messages.Add(new Message { Role = "system", Text = $"❌ Screenshot failed: {ex.Message}" });
+                AddMessageAndScroll(new Message { Role = "system", Text = $"❌ Screenshot failed: {ex.Message}" });
             }
             await Task.CompletedTask;
         }
@@ -249,52 +242,42 @@ namespace UI
 
         private void ShowScreenshotAttachedIndicator(string imagePath)
         {
-            ScreenshotChipBorder.Visibility = Visibility.Visible;
-            bool exists = !string.IsNullOrEmpty(imagePath) && System.IO.File.Exists(imagePath);
-            var previewBtn = ScreenshotAttachedPanel.Children.OfType<Button>().FirstOrDefault(b => (string?)b.Content == "Preview");
-            if (previewBtn != null) previewBtn.IsEnabled = exists;
+            ScreenshotChip.Visibility = Visibility.Visible;
+            ScreenshotThumbnail.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imagePath));
         }
 
         private void HideScreenshotAttachedIndicator()
         {
-            ScreenshotChipBorder.Visibility = Visibility.Collapsed;
+            ScreenshotChip.Visibility = Visibility.Collapsed;
+            ScreenshotThumbnail.Source = null;
             _lastScreenshotPath = null;
-            var previewBtn = ScreenshotAttachedPanel.Children.OfType<Button>().FirstOrDefault(b => (string?)b.Content == "Preview");
-            if (previewBtn != null) previewBtn.IsEnabled = false;
         }
 
-        private void PreviewScreenshotButton_Click(object sender, RoutedEventArgs e)
+        private void ScreenshotThumbnail_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_lastScreenshotPath) || !System.IO.File.Exists(_lastScreenshotPath))
-            {
-                Messages.Add(new Message { Role = "system", Text = "No screenshot to preview." });
                 return;
-            }
-            ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
-            ScreenshotPreviewPanel.Visibility = Visibility.Visible;
-            _originalTop = this.Top;
-            _originalHeight = this.Height;
+            ScreenshotModal.Visibility = Visibility.Visible;
+            ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
         }
 
-        private void ScreenshotPreviewPanel_MouseDown(object sender, MouseButtonEventArgs e)
+        private void ScreenshotModal_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            ScreenshotPreviewPanel.Visibility = Visibility.Collapsed;
-            ScreenshotPreviewImage.Source = null;
-            if (_defaultTop > -1) this.Top = _defaultTop;
-            if (_defaultLeft > -1) this.Left = _defaultLeft;
+            ScreenshotModal.Visibility = Visibility.Collapsed;
+            ScreenshotModalImage.Source = null;
         }
 
         private void RemoveScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
             HideScreenshotAttachedIndicator();
-            Messages.Add(new Message { Role = "system", Text = "Screenshot removed from context. Only text will be sent." });
+            AddMessageAndScroll(new Message { Role = "system", Text = "Screenshot removed from context. Only text will be sent." });
         }
 
         private void SendImageToAI_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string imagePath && !string.IsNullOrEmpty(imagePath))
             {
-                Messages.Add(new Message { Role = "system", Text = $"🧠 Image sent to AI: {imagePath}" });
+                AddMessageAndScroll(new Message { Role = "system", Text = $"🧠 Image sent to AI: {imagePath}" });
                 // TODO: Integrate with VisionClient or AI pipeline
             }
         }
@@ -302,6 +285,39 @@ namespace UI
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void AddMessageAndScroll(Message message)
+        {
+            Messages.Add(message);
+            Dispatcher.InvokeAsync(() => {
+                MessagesScrollViewer.ScrollToEnd();
+                CenterOverlayOnScreen();
+            }, DispatcherPriority.Background);
+        }
+
+        private void CenterOverlayOnScreen()
+        {
+            var screen = System.Windows.Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(this).Handle).WorkingArea;
+            this.Left = screen.Left + (screen.Width - this.ActualWidth) / 2;
+            this.Top = screen.Top + (screen.Height - this.ActualHeight) / 2;
+        }
+
+        // Allow dragging the window by the header bar
+        private void HeaderBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                DragMove();
+            }
+        }
+
+        public bool IsVoiceReplyEnabled => VoiceReplyToggle != null && VoiceReplyToggle.IsChecked == true;
+
+        protected override void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+            Dispatcher.BeginInvoke(new Action(CenterOverlayOnScreen), DispatcherPriority.ApplicationIdle);
         }
     }
 } 
