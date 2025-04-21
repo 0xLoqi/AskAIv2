@@ -235,7 +235,7 @@ tickets:
   title: "VisionClient"
   context: "src/Vision"
   tasks:
-    - "Call GPT‑4V with image+prompt"
+    - "Call GPT‑4.1 nano with image+prompt"
   definition_of_done:
     - "Gets answer"
 

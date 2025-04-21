@@ -88,7 +88,7 @@ public partial class MainWindow : Window
 
     private void ToggleOverlay()
     {
-        if (_overlayWindow == null)
+        if (_overlayWindow == null || !_overlayWindow.IsVisible || !_overlayWindow.IsActive)
         {
             _lastActiveWindow = GetForegroundWindow();
             // Capture screenshot before showing overlay

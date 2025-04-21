@@ -10,6 +10,14 @@ class Program
         {
             ScreenGrabber.CaptureActiveWindowToPng(outputPath);
             Console.WriteLine($"Active window captured to: {outputPath}");
+            // Test ImageResizer
+            string resizedPath = "output/active_window_resized.png";
+            ImageResizer.ResizeImage(outputPath, resizedPath);
+            Console.WriteLine($"Resized image saved to: {resizedPath}");
+            // Test VisionClient
+            string prompt = "What is shown in this screenshot?";
+            string answer = VisionClient.AskWithImageAsync(resizedPath, prompt).Result;
+            Console.WriteLine($"Vision answer: {answer}");
         }
         catch (Exception ex)
         {

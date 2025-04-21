@@ -25,7 +25,7 @@ namespace Voice
 <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'>
   <voice name='{_voiceName}'>
     <mstts:express-as style='{style}' styledegree='1.0'>
-      <prosody pitch='+10%' rate='0.7'>
+      <prosody rate='1.1'>
         {System.Security.SecurityElement.Escape(text)}
       </prosody>
     </mstts:express-as>
