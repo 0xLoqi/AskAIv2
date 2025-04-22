@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo/ask.ai.png" alt="ask.ai logo" width="400"><br>
+  <img src="assets/askai_logo.png" alt="ask.ai logo" width="400"><br>
   <br>
   <b>Ask anything, anywhere, anytime.</b>
   <br>
