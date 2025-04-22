@@ -87,10 +87,14 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="AskAI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
                 <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
-                <ToggleButton x:Name="PinButton" Grid.Column="2" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
+                <Button x:Name="NewChatButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New Chat" Click="NewChatButton_Click"/>
+                <Button x:Name="HistoryButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE823;" ToolTip="Chat History" Click="HistoryButton_Click"/>
+                <ToggleButton x:Name="PinButton" Grid.Column="4" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
             </Grid>
         </Border>
         <!-- Spacer -->
@@ -112,17 +116,17 @@
                 <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
                     <ItemsControl.Resources>
                         <DataTemplate x:Key="UserMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,2" Margin="48,0,0,8" Background="#2979FF" HorizontalAlignment="Right">
+                            <Border CornerRadius="10" Padding="4,1" Margin="24,0,0,4" Background="#2979FF" HorizontalAlignment="Right">
                                 <md:MarkdownViewer Markdown="{Binding Text}" Foreground="White" FontSize="16"/>
                             </Border>
                         </DataTemplate>
                         <DataTemplate x:Key="AssistantMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,2" Margin="0,0,48,8" Background="#292929" HorizontalAlignment="Left">
+                            <Border CornerRadius="10" Padding="4,1" Margin="0,0,24,4" Background="#292929" HorizontalAlignment="Left">
                                 <md:MarkdownViewer Markdown="{Binding Text}" Foreground="White" FontSize="16"/>
                             </Border>
                         </DataTemplate>
                         <DataTemplate x:Key="SystemMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,2" Margin="0,0,48,8" Background="#444" BorderBrush="#FFD700" BorderThickness="1" HorizontalAlignment="Left">
+                            <Border CornerRadius="10" Padding="4,1" Margin="0,0,24,4" Background="#444" BorderBrush="#FFD700" BorderThickness="1" HorizontalAlignment="Left">
                                 <md:MarkdownViewer Markdown="{Binding Text}" Foreground="#FFD700" FontSize="15" FontStyle="Italic"/>
                             </Border>
                         </DataTemplate>
@@ -194,5 +198,11 @@
                 <Image x:Name="ScreenshotModalImage" Stretch="Uniform" MaxWidth="640" MaxHeight="480" MinWidth="320" MinHeight="180"/>
             </Border>
         </Border>
+        <!-- History Popup -->
+        <Popup x:Name="HistoryPopup" PlacementTarget="{Binding ElementName=HistoryButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" IsOpen="False">
+            <Border Background="#232323" CornerRadius="8" Padding="4" Effect="{DynamicResource DropShadowEffect}">
+                <StackPanel x:Name="HistoryPopupPanel" MinWidth="180" />
+            </Border>
+        </Popup>
     </Grid>
 </local:OverlayWindow> 

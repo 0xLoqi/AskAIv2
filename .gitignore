@@ -411,3 +411,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 .env
+memory.json
+
+chats/

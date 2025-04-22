@@ -16,6 +16,8 @@ using NAudio.Wave;
 using Vision;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Animation;
+using System.Text.Json;
+using System.IO;
 
 namespace UI
 {
@@ -70,6 +72,9 @@ namespace UI
 
         private bool _screenshotZoomed = false;
 
+        private const string MemoryFilePath = "memory.json";
+        private static readonly string ChatsDir = "chats";
+
         public Overlay(IntPtr previousActiveWindow, string? screenshotPath)
         {
             DotEnv.Load();
@@ -119,6 +124,7 @@ namespace UI
             // Always focus the input box on overlay load
             InputTextBox.Focus();
             InputTextBox.CaretIndex = InputTextBox.Text.Length;
+            LoadMessages();
         }
 
         private void Overlay_Unloaded(object sender, RoutedEventArgs e)
@@ -385,6 +391,7 @@ namespace UI
         private void AddMessageAndScroll(Message message)
         {
             Messages.Add(message);
+            SaveMessages();
             Dispatcher.InvokeAsync(() => {
                 MessagesScrollViewer.ScrollToEnd();
                 CenterOverlayOnScreen();
@@ -502,6 +509,103 @@ namespace UI
             {
                 this.Hide();
             }
+        }
+
+        private void SaveMessages()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(Messages);
+                File.WriteAllText(MemoryFilePath, json);
+            }
+            catch { /* Ignore errors for MVP */ }
+        }
+
+        private void LoadMessages()
+        {
+            try
+            {
+                if (File.Exists(MemoryFilePath))
+                {
+                    var json = File.ReadAllText(MemoryFilePath);
+                    var loaded = JsonSerializer.Deserialize<ObservableCollection<Message>>(json);
+                    if (loaded != null)
+                    {
+                        Messages.Clear();
+                        foreach (var msg in loaded)
+                            Messages.Add(msg);
+                    }
+                }
+            }
+            catch { /* Ignore errors for MVP */ }
+        }
+
+        private void NewChatButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!Directory.Exists(ChatsDir)) Directory.CreateDirectory(ChatsDir);
+                if (Messages.Count > 0)
+                {
+                    var file = Path.Combine(ChatsDir, $"chat-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+                    var json = JsonSerializer.Serialize(Messages);
+                    File.WriteAllText(file, json);
+                }
+                Messages.Clear();
+                SaveMessages(); // Clear memory.json for new chat
+            }
+            catch { /* Ignore errors for MVP */ }
+        }
+
+        private void HistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!Directory.Exists(ChatsDir)) Directory.CreateDirectory(ChatsDir);
+                var files = Directory.GetFiles(ChatsDir, "chat-*.json").OrderByDescending(f => f).ToList();
+                HistoryPopupPanel.Children.Clear();
+                foreach (var file in files)
+                {
+                    var date = Path.GetFileNameWithoutExtension(file).Replace("chat-", "");
+                    int msgCount = 0;
+                    try
+                    {
+                        var json = File.ReadAllText(file);
+                        var msgs = JsonSerializer.Deserialize<ObservableCollection<Message>>(json);
+                        msgCount = msgs?.Count ?? 0;
+                    }
+                    catch { }
+                    var btn = new Button
+                    {
+                        Content = $"{date} ({msgCount} msgs)",
+                        Tag = file,
+                        Margin = new Thickness(0, 0, 0, 2),
+                        HorizontalContentAlignment = HorizontalAlignment.Left,
+                        Style = (Style)FindResource("IconButtonStyle")
+                    };
+                    btn.Click += (s, ev) => { LoadChatFile(file); HistoryPopup.IsOpen = false; };
+                    HistoryPopupPanel.Children.Add(btn);
+                }
+                HistoryPopup.IsOpen = true;
+            }
+            catch { /* Ignore errors for MVP */ }
+        }
+
+        private void LoadChatFile(string file)
+        {
+            try
+            {
+                var json = File.ReadAllText(file);
+                var loaded = JsonSerializer.Deserialize<ObservableCollection<Message>>(json);
+                if (loaded != null)
+                {
+                    Messages.Clear();
+                    foreach (var msg in loaded)
+                        Messages.Add(msg);
+                    SaveMessages(); // Update memory.json
+                }
+            }
+            catch { /* Ignore errors for MVP */ }
         }
     }
 } 
