@@ -24,4 +24,17 @@ namespace UI
             return base.SelectTemplate(item, container);
         }
     }
+
+    public class TTSProviderIconConverter : System.Windows.Data.IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            bool isElevenLabs = value is bool b && b;
+            return isElevenLabs ? "🧑‍🔬" : "🗣️";
+        }
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 } 

@@ -1,4 +1,4 @@
-# ⚡️ AskAI V2
+# ⚡️ Ask.AI V2
 
 A modern, privacy-conscious desktop AI assistant for Windows, featuring a hotkey-activated overlay, chat, vision, voice, and memory. Built with .NET 9, WPF, and OpenAI APIs.
 

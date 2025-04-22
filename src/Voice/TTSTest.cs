@@ -23,6 +23,21 @@ namespace Voice
             {
                 Console.WriteLine($"Synthesis failed: {ex.Message}");
             }
+
+            // ElevenLabs TTS test
+            string elevenLabsApiKey = "sk_93023778c72da80ff4f8952861956aeb9f039f0962a82039";
+            var elevenTts = new ElevenLabsTTSService(elevenLabsApiKey);
+            string elevenText = "This is a test of the ElevenLabsTTSService class.";
+            string elevenOutputPath = "output/elevenlabs_test.mp3";
+            try
+            {
+                await elevenTts.SynthesizeToFileAsync(elevenText, elevenOutputPath);
+                Console.WriteLine($"ElevenLabs synthesis complete: {elevenOutputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ElevenLabs synthesis failed: {ex.Message}");
+            }
         }
     }
 } 
