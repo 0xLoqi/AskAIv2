@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/askai_logo.png" alt="ask.ai logo" width="400"><br>
+  <img src="Assets/askai_logo.png" alt="ask.ai logo" width="400"><br>
   <br>
   <b>Ask anything, anywhere, anytime.</b>
   <br>
@@ -7,8 +7,6 @@
     The AI assistant that's always a hotkey away—type or talk, snap a screenshot, and get instant answers. All on your desktop.
   </em>
 </div>
-
-# <img src="Assets/askai_logo.png" alt="Ask.AI Logo" width="48" style="vertical-align:middle;"> Ask.AI
 
 A modern, privacy-conscious, and deeply personal desktop AI companion for Windows. Ask.AI is more than a chatbot—it's your always-on, voice-enabled, vision-capable, memory-empowered digital friend. Built with .NET 9, WPF, and OpenAI APIs, Ask.AI brings instant answers, playful conversation, and powerful productivity to your fingertips.
 
