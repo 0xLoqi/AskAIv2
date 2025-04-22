@@ -57,11 +57,37 @@ public partial class MainWindow : Window
                 Application.Current.Shutdown();
             }
         }
+
+        // Preload overlay window (hidden)
+        _lastActiveWindow = GetForegroundWindow();
+        string screenshotPath = null;
+        if (_lastActiveWindow != IntPtr.Zero)
+        {
+            screenshotPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"active_window_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            try
+            {
+                Vision.ScreenGrabber.CaptureWindowToPng(_lastActiveWindow, screenshotPath);
+            }
+            catch
+            {
+                try
+                {
+                    Vision.ScreenGrabber.CaptureScreenToPng(screenshotPath);
+                }
+                catch { screenshotPath = null; }
+            }
+        }
+        _overlayWindow = new Overlay(_lastActiveWindow, screenshotPath);
+        _overlayWindow.Hide();
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         this.Hide();
+        if (_overlayWindow != null)
+        {
+            _overlayWindow.Owner = this;
+        }
         var helper = new WindowInteropHelper(this);
         _source = HwndSource.FromHwnd(helper.Handle);
         _source.AddHook(HwndHook);
@@ -73,6 +99,11 @@ public partial class MainWindow : Window
         var helper = new WindowInteropHelper(this);
         UnregisterHotKey(helper.Handle, HOTKEY_ID);
         _source?.RemoveHook(HwndHook);
+        if (_overlayWindow != null)
+        {
+            _overlayWindow.Close();
+            _overlayWindow = null;
+        }
     }
 
     private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -88,10 +119,12 @@ public partial class MainWindow : Window
 
     private void ToggleOverlay()
     {
-        if (_overlayWindow == null || !_overlayWindow.IsVisible || !_overlayWindow.IsActive)
+        if (_overlayWindow == null)
+            return;
+        if (!_overlayWindow.IsVisible)
         {
             _lastActiveWindow = GetForegroundWindow();
-            // Capture screenshot before showing overlay
+            // Update screenshot before showing overlay
             string screenshotPath = null;
             if (_lastActiveWindow != IntPtr.Zero)
             {
@@ -109,35 +142,14 @@ public partial class MainWindow : Window
                     catch { screenshotPath = null; }
                 }
             }
-            _overlayWindow = new Overlay(_lastActiveWindow, screenshotPath);
-            _overlayWindow.Owner = this;
-            var mousePos = System.Windows.Forms.Control.MousePosition;
-
-            // Find the screen containing the mouse
-            var screen = System.Windows.Forms.Screen.FromPoint(mousePos);
-            var bounds = screen.WorkingArea;
-
-            // Get DPI scaling for the screen
-            double dpiScale = 1.0;
-            var source = PresentationSource.FromVisual(this);
-            if (source != null)
-                dpiScale = source.CompositionTarget.TransformToDevice.M11;
-
-            // Center overlay in the screen
-            double overlayWidth = _overlayWindow.Width * dpiScale;
-            double overlayHeight = _overlayWindow.Height * dpiScale;
-            double left = bounds.Left + (bounds.Width - overlayWidth) / 2.0;
-            double top = bounds.Top + (bounds.Height - overlayHeight) / 2.0;
-
-            _overlayWindow.Left = left / dpiScale;
-            _overlayWindow.Top = top / dpiScale;
+            _overlayWindow._previousActiveWindow = _lastActiveWindow;
+            _overlayWindow._lastScreenshotPath = screenshotPath;
             _overlayWindow.Show();
-            _overlayWindow.Closed += (s, args) => { _overlayWindow = null; };
+            _overlayWindow.Activate();
         }
         else
         {
-            _overlayWindow.Close();
-            _overlayWindow = null;
+            _overlayWindow.Hide();
         }
     }
 }

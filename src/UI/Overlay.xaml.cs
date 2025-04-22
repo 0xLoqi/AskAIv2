@@ -37,8 +37,8 @@ namespace UI
         private Stopwatch? _pttStopwatch;
         private string? _lastTempFile;
         private AzureTTSService? _ttsService;
-        private IntPtr _previousActiveWindow = IntPtr.Zero;
-        private string? _lastScreenshotPath;
+        public IntPtr _previousActiveWindow = IntPtr.Zero;
+        public string? _lastScreenshotPath;
         private double _originalTop = -1;
         private double _originalHeight = -1;
         private double _defaultTop = -1;
@@ -83,6 +83,7 @@ namespace UI
             Unloaded += Overlay_Unloaded;
             CameraButton.Click += CameraButton_Click;
             InputTextBox.TextChanged += InputTextBox_TextChanged;
+            this.Deactivated += Overlay_Deactivated;
         }
 
         public Overlay(IntPtr previousActiveWindow) : this(previousActiveWindow, null) { }
@@ -237,7 +238,7 @@ namespace UI
             anim.Start();
         }
 
-        private async void InputTextBox_KeyDown(object sender, KeyEventArgs e)
+        private async void InputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             // Suppress space input if Ctrl+Space is held for voice input
             if (e.Key == Key.Space && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)))
@@ -247,43 +248,48 @@ namespace UI
             }
             if (e.Key == Key.Enter)
             {
-                var text = InputTextBox.Text;
-                if (!string.IsNullOrWhiteSpace(text))
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 {
-                    // Inject system prompt if this is the first user message
-                    if (_history.Count == 0)
-                    {
-                        _history.Add(new Msg { Role = "system", Content = PromptTemplate.DefaultSystemPrompt });
-                    }
-                    AddMessageAndScroll(new Message { Role = "user", Text = text });
+                    // Allow newline
+                    return;
+                }
+                e.Handled = true; // Prevent newline
+                var text = InputTextBox.Text;
+                if (!string.IsNullOrWhiteSpace(text) || !string.IsNullOrEmpty(_lastScreenshotPath))
+                {
+                    // Add user message
+                    AddMessageAndScroll(new Message { Role = "user", Text = text, ImagePath = _lastScreenshotPath });
                     _history.Add(new Msg { Role = "user", Content = text });
                     InputTextBox.Clear();
-                    var reply = await _chatClient.SendAsync(_history);
+
+                    // Show loading message
+                    var loadingMsg = new Message { Role = "assistant", Text = "⏳ Thinking..." };
+                    Messages.Add(loadingMsg);
+
+                    string reply = string.Empty;
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(_lastScreenshotPath))
+                        {
+                            reply = await VisionClient.AskWithImageAsync(_lastScreenshotPath, text);
+                        }
+                        else
+                        {
+                            reply = await _chatClient.SendAsync(_history);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        reply = $"❌ Error: {ex.Message}";
+                    }
+
+                    // Remove loading message and add real reply
+                    Messages.Remove(loadingMsg);
                     AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
                     _history.Add(new Msg { Role = "assistant", Content = reply });
 
-                    // Speak assistant reply using AzureTTSService and NAudio
-                    if (_ttsService != null && IsVoiceReplyEnabled)
-                    {
-                        string style = "affectionate";
-                        if (reply.Contains("congratulations", StringComparison.OrdinalIgnoreCase) || reply.Contains("great job", StringComparison.OrdinalIgnoreCase) || reply.Contains("well done", StringComparison.OrdinalIgnoreCase))
-                            style = "cheerful";
-                        else if (reply.Contains("sorry", StringComparison.OrdinalIgnoreCase) || reply.Contains("unfortunately", StringComparison.OrdinalIgnoreCase) || reply.Contains("cannot", StringComparison.OrdinalIgnoreCase))
-                            style = "sad";
-                        string tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"assistant_{Guid.NewGuid()}.wav");
-                        await _ttsService.SynthesizeToFileAsync(reply, style, tempWav);
-                        using (var audioFile = new AudioFileReader(tempWav))
-                        using (var outputDevice = new WaveOutEvent())
-                        {
-                            outputDevice.Init(audioFile);
-                            outputDevice.Play();
-                            while (outputDevice.PlaybackState == PlaybackState.Playing)
-                            {
-                                await Task.Delay(100);
-                            }
-                        }
-                        try { System.IO.File.Delete(tempWav); } catch { }
-                    }
+                    // Clear screenshot after sending
+                    HideScreenshotAttachedIndicator();
                 }
             }
         }
@@ -373,7 +379,7 @@ namespace UI
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            this.Hide(); // Only hide, do not close
         }
 
         private void AddMessageAndScroll(Message message)
@@ -431,6 +437,71 @@ namespace UI
             ScreenshotPreviewImage.Source = null;
             _lastScreenshotPath = null;
             // Do NOT add a system message when screenshot is removed
+        }
+
+        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        {
+            var text = InputTextBox.Text;
+            if (string.IsNullOrWhiteSpace(text) && string.IsNullOrEmpty(_lastScreenshotPath))
+                return;
+
+            // Add user message
+            AddMessageAndScroll(new Message { Role = "user", Text = text, ImagePath = _lastScreenshotPath });
+            _history.Add(new Msg { Role = "user", Content = text });
+            InputTextBox.Clear();
+
+            // Show loading message
+            var loadingMsg = new Message { Role = "assistant", Text = "⏳ Thinking..." };
+            Messages.Add(loadingMsg);
+
+            string reply = string.Empty;
+            try
+            {
+                if (!string.IsNullOrEmpty(_lastScreenshotPath))
+                {
+                    reply = await VisionClient.AskWithImageAsync(_lastScreenshotPath, text);
+                }
+                else
+                {
+                    reply = await _chatClient.SendAsync(_history);
+                }
+            }
+            catch (Exception ex)
+            {
+                reply = $"❌ Error: {ex.Message}";
+            }
+
+            // Remove loading message and add real reply
+            Messages.Remove(loadingMsg);
+            AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
+            _history.Add(new Msg { Role = "assistant", Content = reply });
+
+            // Clear screenshot after sending
+            HideScreenshotAttachedIndicator();
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            e.Cancel = true;
+            this.Hide();
+        }
+
+        private void PinButton_Checked(object sender, RoutedEventArgs e)
+        {
+            // Do nothing (stay open)
+        }
+
+        private void PinButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            this.Hide(); // Auto-dismiss when unpinned
+        }
+
+        private void Overlay_Deactivated(object? sender, EventArgs e)
+        {
+            if (PinButton.IsChecked == false)
+            {
+                this.Hide();
+            }
         }
     }
 } 

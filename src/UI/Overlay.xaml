@@ -8,7 +8,7 @@
         xmlns:markdown="clr-namespace:Markdown.Xaml"
         xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         mc:Ignorable="d"
-        Width="640" MaxWidth="900" SizeToContent="Height"
+        Width="420" SizeToContent="Height"
         ShowActivated="True"   Focusable="True"
         WindowStyle="None"     AllowsTransparency="True"
         Background="#80222222" Topmost="True"
@@ -20,15 +20,15 @@
         <!-- Modern Icon Button Style -->
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe Fluent Icons"/>
-            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#fff"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -74,15 +74,14 @@
             </Setter>
         </Style>
     </local:OverlayWindow.Resources>
-    <Grid>
+    <Grid Width="420">
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/> <!-- Header bar -->
-            <RowDefinition Height="*"/>  <!-- Messages -->
-            <RowDefinition Height="Auto"/> <!-- Screenshot chip -->
-            <RowDefinition Height="Auto"/> <!-- Chatbar -->
+            <RowDefinition Height="Auto"/> <!-- Spacer -->
+            <RowDefinition Height="Auto"/> <!-- Input bar at bottom -->
         </Grid.RowDefinitions>
         <!-- Modern Header Bar -->
-        <Border Grid.Row="0" Background="#232323" CornerRadius="8,8,0,0" Padding="0,0,0,0" Height="32" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown">
+        <Border Grid.Row="0" Background="#232323" CornerRadius="8,8,0,0" Padding="0,0,0,0" Height="32" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown" Width="420">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -91,9 +90,11 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="AskAI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
                 <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
-                <ToggleButton x:Name="PinButton" Grid.Column="2" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                <ToggleButton x:Name="PinButton" Grid.Column="2" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
             </Grid>
         </Border>
+        <!-- Spacer -->
+        <Border Grid.Row="1" Background="Transparent" Height="10"/>
         <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
         <Border x:Name="ScreenshotPreviewPane" Grid.Row="1" Background="#222" CornerRadius="12" Padding="8" Margin="16,8,16,8" Visibility="Collapsed" VerticalAlignment="Top" Panel.ZIndex="100">
             <Grid>
@@ -142,8 +143,8 @@
                 </LinearGradientBrush>
             </ScrollViewer.OpacityMask>
         </ScrollViewer>
-        <!-- Single chatbar at the bottom -->
-        <Border Grid.Row="3" Background="#232323" CornerRadius="8" Padding="2" Margin="0,0,0,0">
+        <!-- Floating chat input bar at bottom center -->
+        <Border Grid.Row="2" Background="#232323" CornerRadius="12" Padding="8,8,8,8" Margin="0,0,0,0" HorizontalAlignment="Center" Width="420" Effect="{DynamicResource DropShadowEffect}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/> <!-- Screenshot chip -->
@@ -151,37 +152,37 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <!-- Screenshot Preview Chip (if present) -->
-                <Border x:Name="ScreenshotChip" Grid.Column="0" Background="#292929" CornerRadius="12" Padding="4" Margin="0,0,8,0" Visibility="Collapsed" VerticalAlignment="Center">
+                <Border x:Name="ScreenshotChip" Grid.Column="0" Background="#292929" CornerRadius="8" Padding="2" Margin="0,0,4,0" Visibility="Collapsed" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image x:Name="ScreenshotThumbnail" Width="32" Height="32" Stretch="UniformToFill" Margin="0,0,4,0" Cursor="Hand" MouseLeftButtonUp="ScreenshotThumbnail_Click"/>
-                        <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="20" Width="20" Background="Transparent" BorderThickness="0" Foreground="#fff" FontSize="14" Margin="0" Padding="0"/>
+                        <Image x:Name="ScreenshotThumbnail" Width="20" Height="20" Stretch="UniformToFill" Margin="0,0,2,0" Cursor="Hand" MouseLeftButtonUp="ScreenshotThumbnail_Click"/>
+                        <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="16" Width="16" Background="Transparent" BorderThickness="0" Foreground="#fff" FontSize="10" Margin="0" Padding="0"/>
                     </StackPanel>
                 </Border>
                 <Grid Grid.Column="1" VerticalAlignment="Center">
                     <!-- Overlayed input and waveform -->
                     <Grid HorizontalAlignment="Stretch" Width="Auto">
-                        <TextBox Name="InputTextBox" VerticalAlignment="Center" Margin="0" KeyDown="InputTextBox_KeyDown" Height="32" FontSize="16" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center"/>
+                        <TextBox Name="InputTextBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="28" MaxHeight="120" VerticalScrollBarVisibility="Auto" FontSize="14" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Top" PreviewKeyDown="InputTextBox_PreviewKeyDown" TextChanged="InputTextBox_TextChanged"/>
                         <TextBlock x:Name="InputPlaceholder"
                                    Text="Type or hold Ctrl+Space to speak..."
                                    Foreground="#888"
-                                   FontSize="16"
-                                   Margin="8,0,0,0"
+                                   FontSize="13"
+                                   Margin="6,0,0,0"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"
                                    IsHitTestVisible="False"
                                    Visibility="Collapsed"
                                    Panel.ZIndex="1"
                                    Background="Transparent"/>
-                        <Canvas x:Name="WaveformCanvas" Height="18" Width="100" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" Panel.ZIndex="10" Margin="0,0,0,0" IsHitTestVisible="False">
-                            <Path x:Name="WaveformPath" Stroke="#fff" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        <Canvas x:Name="WaveformCanvas" Height="12" Width="60" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" Panel.ZIndex="10" Margin="0,0,0,0" IsHitTestVisible="False">
+                            <Path x:Name="WaveformPath" Stroke="#fff" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
                         </Canvas>
                     </Grid>
                 </Grid>
                 <Button x:Name="CameraButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE114;" ToolTip="Screenshot"/>
-                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="40" Height="40" Margin="6,0,0,0" ToolTip="Voice reply" FontSize="22" Content="🗣️" IsChecked="False" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Button x:Name="SendButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE122;" ToolTip="Send" Click="SendButton_Click"/>
+                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="28" Height="28" Margin="4,0,0,0" ToolTip="Voice reply" FontSize="16" Content="🗣️" IsChecked="False" Background="Transparent" Foreground="White" BorderThickness="0"/>
             </Grid>
         </Border>
         <!-- Modal overlay for full-size screenshot preview (hidden by default) -->

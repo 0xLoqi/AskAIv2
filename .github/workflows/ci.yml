@@ -16,10 +16,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       - name: Restore dependencies
-        run: dotnet restore SkAi.sln
+        run: dotnet restore Skai.sln
       - name: Build
-        run: dotnet build SkAi.sln --no-restore --configuration Release
+        run: dotnet build Skai.sln --no-restore --configuration Release
       - name: Test
-        run: dotnet test SkAi.sln --no-build --configuration Release || true
+        run: dotnet test Skai.sln --no-build --configuration Release || true
       - name: Publish Artifacts
-        run: dotnet publish SkAi.sln --no-build --configuration Release --output ./artifacts 
+        run: dotnet publish Skai.sln --no-build --configuration Release --output ./artifacts 

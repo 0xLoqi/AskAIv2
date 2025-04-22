@@ -132,7 +132,7 @@
   title: "Mascot SVG"
   context: "assets/"
   tasks:
-    - "Add skai.svg placeholder"
+    - "Add Skai.svg placeholder"
   definition_of_done:
     - "Overlay shows icon"
 
