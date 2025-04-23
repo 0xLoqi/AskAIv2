@@ -78,7 +78,7 @@
     <Grid Width="420">
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/> <!-- Header bar -->
-            <RowDefinition Height="Auto"/> <!-- Spacer -->
+            <RowDefinition Height="*"/> <!-- Message area grows to fill -->
             <RowDefinition Height="Auto"/> <!-- Input bar at bottom -->
         </Grid.RowDefinitions>
         <!-- Modern Header Bar -->
@@ -100,8 +100,6 @@
                 <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
             </Grid>
         </Border>
-        <!-- Spacer -->
-        <Border Grid.Row="1" Background="Transparent" Height="10"/>
         <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
         <Border x:Name="ScreenshotPreviewPane" Grid.Row="1" Background="#222" CornerRadius="12" Padding="8" Margin="16,8,16,8" Visibility="Collapsed" VerticalAlignment="Top" Panel.ZIndex="100">
             <Grid>
@@ -113,7 +111,7 @@
             </Grid>
         </Border>
         <!-- Message area with fade-out scroll -->
-        <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="400" Margin="0,0,0,4" PanningMode="Both" CanContentScroll="True" PreviewMouseWheel="MessagesScrollViewer_PreviewMouseWheel">
+        <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4" PanningMode="Both" CanContentScroll="True" PreviewMouseWheel="MessagesScrollViewer_PreviewMouseWheel" MaxHeight="1000">
             <ScrollViewer.Style>
                 <Style TargetType="ScrollViewer">
                     <Setter Property="OpacityMask" Value="{x:Null}"/>
@@ -138,69 +136,75 @@
                     <ItemsControl.Resources>
                         <DataTemplate x:Key="UserMessageTemplate">
                             <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#2979FF" HorizontalAlignment="Right" MinHeight="0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Text}" Foreground="White" FontSize="15" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Text}" Foreground="White" FontSize="15" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
+                                </StackPanel>
                             </Border>
                         </DataTemplate>
                         <DataTemplate x:Key="AssistantMessageTemplate">
                             <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#292929" HorizontalAlignment="Left" MinHeight="0" VerticalAlignment="Center">
-                                <ContentControl Content="{Binding Text}">
-                                    <ContentControl.Style>
-                                        <Style TargetType="ContentControl">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Text}" Value="typing-indicator">
-                                                    <Setter Property="ContentTemplate">
-                                                        <Setter.Value>
-                                                            <DataTemplate>
-                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
-                                                                    <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
-                                                                        <Ellipse.Triggers>
-                                                                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard RepeatBehavior="Forever">
-                                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0"/>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
-                                                                            </EventTrigger>
-                                                                        </Ellipse.Triggers>
-                                                                    </Ellipse>
-                                                                    <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
-                                                                        <Ellipse.Triggers>
-                                                                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard RepeatBehavior="Forever">
-                                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.2"/>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
-                                                                            </EventTrigger>
-                                                                        </Ellipse.Triggers>
-                                                                    </Ellipse>
-                                                                    <Ellipse Width="8" Height="8" Fill="#fff">
-                                                                        <Ellipse.Triggers>
-                                                                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard RepeatBehavior="Forever">
-                                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.4"/>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
-                                                                            </EventTrigger>
-                                                                        </Ellipse.Triggers>
-                                                                    </Ellipse>
-                                                                </StackPanel>
-                                                            </DataTemplate>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                            <Setter Property="ContentTemplate">
-                                                <Setter.Value>
-                                                    <DataTemplate>
-                                                        <md:MarkdownViewer Markdown="{Binding}" Foreground="White" FontSize="15" Background="Transparent" />
-                                                    </DataTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </ContentControl.Style>
-                                </ContentControl>
+                                <StackPanel>
+                                    <ContentControl Content="{Binding Text}">
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text}" Value="typing-indicator">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
+                                                                        <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
+                                                                            <Ellipse.Triggers>
+                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                    <BeginStoryboard>
+                                                                                        <Storyboard RepeatBehavior="Forever">
+                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0"/>
+                                                                                        </Storyboard>
+                                                                                    </BeginStoryboard>
+                                                                                </EventTrigger>
+                                                                            </Ellipse.Triggers>
+                                                                        </Ellipse>
+                                                                        <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
+                                                                            <Ellipse.Triggers>
+                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                    <BeginStoryboard>
+                                                                                        <Storyboard RepeatBehavior="Forever">
+                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.2"/>
+                                                                                        </Storyboard>
+                                                                                    </BeginStoryboard>
+                                                                                </EventTrigger>
+                                                                            </Ellipse.Triggers>
+                                                                        </Ellipse>
+                                                                        <Ellipse Width="8" Height="8" Fill="#fff">
+                                                                            <Ellipse.Triggers>
+                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                    <BeginStoryboard>
+                                                                                        <Storyboard RepeatBehavior="Forever">
+                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.4"/>
+                                                                                        </Storyboard>
+                                                                                    </BeginStoryboard>
+                                                                                </EventTrigger>
+                                                                            </Ellipse.Triggers>
+                                                                        </Ellipse>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                                <Setter Property="ContentTemplate">
+                                                    <Setter.Value>
+                                                        <DataTemplate>
+                                                            <md:MarkdownViewer Markdown="{Binding}" Foreground="White" FontSize="15" Background="Transparent" Padding="0" Margin="0" />
+                                                        </DataTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                    <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
+                                </StackPanel>
                             </Border>
                         </DataTemplate>
                         <DataTemplate x:Key="SystemMessageTemplate">

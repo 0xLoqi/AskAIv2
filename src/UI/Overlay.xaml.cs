@@ -20,17 +20,22 @@ using System.Text.Json;
 using System.IO;
 using System.Drawing;
 using UI;
+using System.ComponentModel;
 
 namespace UI
 {
     public partial class Overlay : OverlayWindow
     {
-        public class Message
+        public class Message : INotifyPropertyChanged
         {
             public string Role { get; set; } = string.Empty;
-            public string Text { get; set; } = string.Empty;
-            public string? ImagePath { get; set; } // Optional: path to image for preview
+            private string _text = string.Empty;
+            public string Text { get => _text; set { _text = value; OnPropertyChanged(nameof(Text)); } }
+            private string? _imagePath;
+            public string? ImagePath { get => _imagePath; set { _imagePath = value; OnPropertyChanged(nameof(ImagePath)); } }
             public DateTime Timestamp { get; set; } = DateTime.Now;
+            public event PropertyChangedEventHandler? PropertyChanged;
+            protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         public ObservableCollection<Message> Messages { get; set; } = new ObservableCollection<Message>();
@@ -98,7 +103,7 @@ namespace UI
             _ttsService = new AzureTTSService(subscriptionKey, subscriptionRegion);
             _elevenLabsTTSService = new ElevenLabsTTSService(_elevenLabsApiKey);
             _previousActiveWindow = previousActiveWindow;
-            _lastScreenshotPath = screenshotPath;
+            _lastScreenshotPath = null; // Always start with no screenshot attached
             _profile = Profile.Load();
             if (string.IsNullOrWhiteSpace(_profile.Name))
             {
@@ -162,6 +167,10 @@ namespace UI
                 Messages.Clear();
                 SaveMessages();
             }
+
+            // Set MaxHeight to 80% of the screen's working area
+            var screen = System.Windows.Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+            this.MaxHeight = screen.WorkingArea.Height * 0.8;
         }
 
         private void Overlay_Unloaded(object sender, RoutedEventArgs e)
@@ -173,6 +182,9 @@ namespace UI
                 _globalHook.Dispose();
                 _globalHook = null;
             }
+            HideScreenshotAttachedIndicator();
+            ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
+            ScreenshotPreviewImage.Source = null;
         }
 
         private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
@@ -180,7 +192,6 @@ namespace UI
             if (e.KeyCode == System.Windows.Forms.Keys.ControlKey || e.KeyCode == System.Windows.Forms.Keys.LControlKey || e.KeyCode == System.Windows.Forms.Keys.RControlKey) _ctrlDown = true;
             if (e.KeyCode == System.Windows.Forms.Keys.Space) _spaceDown = true;
             // Debug: confirm key handler is firing
-            System.Diagnostics.Debug.WriteLine($"KeyDown: {e.KeyCode}, Ctrl: {_ctrlDown}, Space: {_spaceDown}");
             if (_ctrlDown && _spaceDown && !_isRecording && this.IsVisible && InputTextBox.IsFocused && this.IsActive)
             {
                 _recordStartTime = DateTime.Now;
@@ -201,8 +212,6 @@ namespace UI
         {
             if (e.KeyCode == System.Windows.Forms.Keys.ControlKey || e.KeyCode == System.Windows.Forms.Keys.LControlKey || e.KeyCode == System.Windows.Forms.Keys.RControlKey) _ctrlDown = false;
             if (e.KeyCode == System.Windows.Forms.Keys.Space) _spaceDown = false;
-            // Debug: confirm key handler is firing
-            System.Diagnostics.Debug.WriteLine($"KeyUp: {e.KeyCode}, Ctrl: {_ctrlDown}, Space: {_spaceDown}");
             if (_isRecording && (!_ctrlDown || !_spaceDown))
             {
                 await StopVoiceRecordingAsync();
@@ -312,6 +321,14 @@ namespace UI
                     _history.Add(new Msg { Role = "user", Content = text });
                     InputTextBox.Clear();
 
+                    // Clear screenshot after sending (move this up)
+                    HideScreenshotAttachedIndicator();
+                    ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
+                    ScreenshotPreviewImage.Source = null;
+                    ScreenshotModal.Visibility = Visibility.Collapsed;
+                    ScreenshotModalImage.Source = null;
+                    _lastScreenshotPath = null;
+
                     // Ensure system prompt is first in _history
                     if (_history.Count == 0 || _history[0].Role != "system")
                     {
@@ -342,7 +359,9 @@ namespace UI
 
                     // Remove loading message and add real reply
                     Messages.Remove(loadingMsg);
-                    AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
+                    var assistantMsg = new Message { Role = "assistant", Text = string.Empty };
+                    AddMessageAndScroll(assistantMsg);
+                    await StreamInAssistantMessage(reply);
                     _history.Add(new Msg { Role = "assistant", Content = reply });
 
                     // Voice reply if enabled
@@ -353,12 +372,6 @@ namespace UI
                         await SpeakTextAsync(reply, audioPath);
                         await PlayAudioFileAsync(audioPath);
                     }
-
-                    // Clear screenshot after sending
-                    HideScreenshotAttachedIndicator();
-                    _lastScreenshotPath = null;
-                    ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
-                    ScreenshotPreviewImage.Source = null;
                 }
             }
         }
@@ -376,17 +389,32 @@ namespace UI
             string outputPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"active_window_{DateTime.Now:yyyyMMdd_HHmmss}.png");
             try
             {
-                if (_previousActiveWindow != IntPtr.Zero)
+                this.Visibility = Visibility.Collapsed;
+                await Task.Delay(150); // Give time for the overlay to hide
+                try
                 {
-                    Vision.ScreenGrabber.CaptureWindowToPng(_previousActiveWindow, outputPath);
-                    _lastScreenshotPath = outputPath;
-                    ShowScreenshotAttachedIndicator(outputPath);
+                    if (_previousActiveWindow != IntPtr.Zero)
+                    {
+                        Vision.ScreenGrabber.CaptureWindowToPng(_previousActiveWindow, outputPath);
+                        _lastScreenshotPath = outputPath;
+                        ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(outputPath));
+                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
+
+                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        Vision.ScreenGrabber.CaptureActiveWindowToPng(outputPath);
+                        _lastScreenshotPath = outputPath;
+                        ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(outputPath));
+                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
+
+                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
+                    }
                 }
-                else
+                finally
                 {
-                    Vision.ScreenGrabber.CaptureActiveWindowToPng(outputPath);
-                    _lastScreenshotPath = outputPath;
-                    ShowScreenshotAttachedIndicator(outputPath);
+                    this.Visibility = Visibility.Visible;
                 }
             }
             catch (Exception ex)
@@ -407,8 +435,6 @@ namespace UI
         {
             ScreenshotChip.Visibility = Visibility.Visible;
             ScreenshotThumbnail.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imagePath));
-            ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imagePath));
-            ScreenshotPreviewPane.Visibility = Visibility.Visible;
         }
 
         private void HideScreenshotAttachedIndicator()
@@ -436,7 +462,9 @@ namespace UI
         private void RemoveScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
             HideScreenshotAttachedIndicator();
-            // Do NOT add a system message when screenshot is removed
+            // Also close the modal if open
+            ScreenshotModal.Visibility = Visibility.Collapsed;
+            ScreenshotModalImage.Source = null;
         }
 
         private void SendImageToAI_Click(object sender, RoutedEventArgs e)
@@ -518,8 +546,9 @@ namespace UI
         {
             ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
             ScreenshotPreviewImage.Source = null;
-            _lastScreenshotPath = null;
-            // Do NOT add a system message when screenshot is removed
+            // Only close the modal, do not remove the screenshot attachment
+            ScreenshotModal.Visibility = Visibility.Collapsed;
+            ScreenshotModalImage.Source = null;
         }
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
@@ -540,6 +569,14 @@ namespace UI
             AddMessageAndScroll(new Message { Role = "user", Text = text, ImagePath = _lastScreenshotPath });
             _history.Add(new Msg { Role = "user", Content = text });
             InputTextBox.Clear();
+
+            // Clear screenshot after sending (move this up)
+            HideScreenshotAttachedIndicator();
+            ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
+            ScreenshotPreviewImage.Source = null;
+            ScreenshotModal.Visibility = Visibility.Collapsed;
+            ScreenshotModalImage.Source = null;
+            _lastScreenshotPath = null;
 
             // Ensure system prompt is first in _history
             if (_history.Count == 0 || _history[0].Role != "system")
@@ -571,7 +608,9 @@ namespace UI
 
             // Remove loading message and add real reply
             Messages.Remove(loadingMsg);
-            AddMessageAndScroll(new Message { Role = "assistant", Text = reply });
+            var assistantMsg2 = new Message { Role = "assistant", Text = string.Empty };
+            AddMessageAndScroll(assistantMsg2);
+            await StreamInAssistantMessage(reply);
             _history.Add(new Msg { Role = "assistant", Content = reply });
 
             // Voice reply if enabled
@@ -582,12 +621,6 @@ namespace UI
                 await SpeakTextAsync(reply, audioPath);
                 await PlayAudioFileAsync(audioPath);
             }
-
-            // Clear screenshot after sending
-            HideScreenshotAttachedIndicator();
-            _lastScreenshotPath = null;
-            ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
-            ScreenshotPreviewImage.Source = null;
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -612,6 +645,9 @@ namespace UI
             {
                 this.Hide();
             }
+            HideScreenshotAttachedIndicator();
+            ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
+            ScreenshotPreviewImage.Source = null;
         }
 
         private void SaveMessages()
@@ -876,6 +912,42 @@ namespace UI
             {
                 this.Show();
                 this.Activate();
+            }
+        }
+
+        // Handler for Pop Out button in screenshot chip
+        private void PopOutScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_lastScreenshotPath) && System.IO.File.Exists(_lastScreenshotPath))
+            {
+                ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(_lastScreenshotPath));
+                ScreenshotModal.Visibility = Visibility.Visible;
+            }
+        }
+
+        // Helper: Stream in assistant message text (typewriter effect)
+        private async Task StreamInAssistantMessage(string fullText)
+        {
+            if (Messages.Count == 0) return;
+            var msg = Messages.LastOrDefault(m => m.Role == "assistant");
+            if (msg == null) return;
+            msg.Text = string.Empty;
+            for (int i = 0; i < fullText.Length; i++)
+            {
+                msg.Text += fullText[i];
+                // Force UI update
+                Messages[Messages.Count - 1] = msg;
+                await Task.Delay(12); // ~80 chars/sec
+            }
+        }
+
+        // Add MessageImage_Click handler
+        private void MessageImage_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Image img && img.DataContext is Message msg && !string.IsNullOrEmpty(msg.ImagePath) && System.IO.File.Exists(msg.ImagePath))
+            {
+                ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(msg.ImagePath));
+                ScreenshotModal.Visibility = Visibility.Visible;
             }
         }
     }
