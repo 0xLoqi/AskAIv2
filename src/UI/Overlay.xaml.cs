@@ -191,7 +191,6 @@ namespace UI
         {
             if (e.KeyCode == System.Windows.Forms.Keys.ControlKey || e.KeyCode == System.Windows.Forms.Keys.LControlKey || e.KeyCode == System.Windows.Forms.Keys.RControlKey) _ctrlDown = true;
             if (e.KeyCode == System.Windows.Forms.Keys.Space) _spaceDown = true;
-            // Debug: confirm key handler is firing
             if (_ctrlDown && _spaceDown && !_isRecording && this.IsVisible && InputTextBox.IsFocused && this.IsActive)
             {
                 _recordStartTime = DateTime.Now;
@@ -399,16 +398,12 @@ namespace UI
                         _lastScreenshotPath = outputPath;
                         ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(outputPath));
                         ScreenshotPreviewPane.Visibility = Visibility.Visible;
-
-                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
                     }
                     else
                     {
                         Vision.ScreenGrabber.CaptureActiveWindowToPng(outputPath);
                         _lastScreenshotPath = outputPath;
                         ScreenshotPreviewImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(outputPath));
-                        ScreenshotPreviewPane.Visibility = Visibility.Visible;
-
                         ScreenshotPreviewPane.Visibility = Visibility.Visible;
                     }
                 }

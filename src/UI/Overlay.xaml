@@ -74,6 +74,35 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- PinButton Custom Style -->
+        <Style x:Key="PinButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#223D29"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2E4D36"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </local:OverlayWindow.Resources>
     <Grid Width="420">
         <Grid.RowDefinitions>
@@ -97,7 +126,7 @@
                 <Button x:Name="NewChatButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New Chat" Click="NewChatButton_Click"/>
                 <Button x:Name="HistoryButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE823;" ToolTip="Chat History" Click="HistoryButton_Click"/>
                 <Button x:Name="SettingsButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}" Content="&#xE713;" ToolTip="Settings" Click="SettingsButton_Click"/>
-                <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="{Binding IsPinned, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
+                <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="True" Style="{StaticResource PinButtonStyle}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
             </Grid>
         </Border>
         <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
