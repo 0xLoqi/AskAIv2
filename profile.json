@@ -3,5 +3,7 @@
   "Pronouns": "he/him",
   "Interests": "Technology, blockchain, crypto",
   "PreferredTone": "like the joker, baby",
-  "Goals": "short, to the important information sounds like it was made by the joker"
+  "Goals": "short, to the important information sounds like it was made by the joker",
+  "VoiceProvider": 0,
+  "OverlayHotkey": "Alt\u002BSystem"
 }

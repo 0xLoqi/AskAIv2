@@ -17,6 +17,17 @@ namespace Voice
 
         public async Task<string> TranscribeAsync(string wavFilePath)
         {
+            if (!File.Exists(wavFilePath))
+            {
+                throw new FileNotFoundException($"WAV file not found: {wavFilePath}");
+            }
+            var fileInfo = new FileInfo(wavFilePath);
+            if (fileInfo.Length == 0)
+            {
+                throw new InvalidOperationException($"WAV file is empty: {wavFilePath}");
+            }
+            Console.WriteLine($"[Whisper] Transcribing file: {wavFilePath} ({fileInfo.Length} bytes)");
+
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
@@ -27,8 +38,21 @@ namespace Voice
             form.Add(fileContent, "file", Path.GetFileName(wavFilePath));
             form.Add(new StringContent("whisper-1"), "model");
 
-            var response = await http.PostAsync("https://api.openai.com/v1/audio/transcriptions", form);
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response = null!;
+            try
+            {
+                response = await http.PostAsync("https://api.openai.com/v1/audio/transcriptions", form);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                if (response != null)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[Whisper] Error response: {errorBody}");
+                }
+                throw;
+            }
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             return doc.RootElement.GetProperty("text").GetString() ?? string.Empty;

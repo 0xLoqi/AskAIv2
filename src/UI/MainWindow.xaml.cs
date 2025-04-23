@@ -31,6 +31,10 @@ public partial class MainWindow : Window
     private Overlay? _overlayWindow;
     private HwndSource? _source;
     private IntPtr _lastActiveWindow = IntPtr.Zero;
+    private string _currentHotkey = "Alt+Space";
+    private uint _currentModifiers = MOD_ALT;
+    private uint _currentKey = VK_SPACE;
+    private Profile _profile = Profile.Load();
 
     public MainWindow()
     {
@@ -91,7 +95,10 @@ public partial class MainWindow : Window
         var helper = new WindowInteropHelper(this);
         _source = HwndSource.FromHwnd(helper.Handle);
         _source.AddHook(HwndHook);
-        RegisterHotKey(helper.Handle, HOTKEY_ID, MOD_ALT, VK_SPACE);
+        // Register hotkey from profile
+        (_currentModifiers, _currentKey) = ParseHotkey(_profile.OverlayHotkey);
+        RegisterHotKey(helper.Handle, HOTKEY_ID, _currentModifiers, _currentKey);
+        _currentHotkey = _profile.OverlayHotkey;
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)
@@ -151,5 +158,41 @@ public partial class MainWindow : Window
         {
             _overlayWindow.Hide();
         }
+    }
+
+    public void ReRegisterHotkey(string hotkey)
+    {
+        var helper = new WindowInteropHelper(this);
+        UnregisterHotKey(helper.Handle, HOTKEY_ID);
+        (_currentModifiers, _currentKey) = ParseHotkey(hotkey);
+        RegisterHotKey(helper.Handle, HOTKEY_ID, _currentModifiers, _currentKey);
+        _currentHotkey = hotkey;
+    }
+
+    private (uint, uint) ParseHotkey(string hotkey)
+    {
+        uint mods = 0;
+        uint key = 0;
+        if (string.IsNullOrWhiteSpace(hotkey)) return (MOD_ALT, VK_SPACE);
+        var parts = hotkey.Split('+');
+        foreach (var part in parts)
+        {
+            var p = part.Trim().ToLower();
+            if (p == "ctrl") mods |= MOD_CONTROL;
+            else if (p == "alt") mods |= MOD_ALT;
+            else if (p == "shift") mods |= MOD_SHIFT;
+            else if (p == "win") mods |= 0x0008; // MOD_WIN
+            else
+            {
+                try
+                {
+                    var k = (System.Windows.Forms.Keys)Enum.Parse(typeof(System.Windows.Forms.Keys), part, true);
+                    key = (uint)k;
+                }
+                catch { }
+            }
+        }
+        if (key == 0) key = VK_SPACE;
+        return (mods, key);
     }
 }

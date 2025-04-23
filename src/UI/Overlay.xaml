@@ -104,248 +104,215 @@
             </Setter>
         </Style>
     </local:OverlayWindow.Resources>
-    <Grid Width="420">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="32"/> <!-- Header bar -->
-            <RowDefinition Height="*"/> <!-- Message area grows to fill -->
-            <RowDefinition Height="Auto"/> <!-- Input bar at bottom -->
-        </Grid.RowDefinitions>
-        <!-- Modern Header Bar -->
-        <Border Grid.Row="0" Background="#232323" CornerRadius="8,8,0,0" Padding="0,0,0,0" Height="32" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown" Width="420">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="Ask.AI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
-                <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
-                <Button x:Name="NewChatButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New Chat" Click="NewChatButton_Click"/>
-                <Button x:Name="HistoryButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE823;" ToolTip="Chat History" Click="HistoryButton_Click"/>
-                <Button x:Name="SettingsButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}" Content="&#xE713;" ToolTip="Settings" Click="SettingsButton_Click"/>
-                <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="True" Style="{StaticResource PinButtonStyle}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
-            </Grid>
-        </Border>
-        <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
-        <Border x:Name="ScreenshotPreviewPane" Grid.Row="1" Background="#222" CornerRadius="12" Padding="8" Margin="16,8,16,8" Visibility="Collapsed" VerticalAlignment="Top" Panel.ZIndex="100">
-            <Grid>
-                <Image x:Name="ScreenshotPreviewImage" Stretch="Uniform" MaxWidth="900" MaxHeight="600" MouseLeftButtonUp="ScreenshotPreviewImage_Click" Cursor="Hand"/>
-                <Button x:Name="RemoveScreenshotPreviewButton" Content="✖" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0" Click="RemoveScreenshotPreviewButton_Click" Background="#333" Foreground="#fff" BorderThickness="0" FontSize="16"/>
-                <Viewbox x:Name="ScreenshotLoadingSpinner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="32" Height="32">
-                    <TextBlock Text="⏳" FontSize="32"/>
-                </Viewbox>
-            </Grid>
-        </Border>
-        <!-- Message area with fade-out scroll -->
-        <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4" PanningMode="Both" CanContentScroll="True" PreviewMouseWheel="MessagesScrollViewer_PreviewMouseWheel" MaxHeight="1000">
-            <ScrollViewer.Style>
-                <Style TargetType="ScrollViewer">
-                    <Setter Property="OpacityMask" Value="{x:Null}"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding ComputedVerticalScrollBarVisibility, RelativeSource={RelativeSource Self}}" Value="Visible">
-                            <Setter Property="OpacityMask">
-                                <Setter.Value>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#00FFFFFF" Offset="0.0"/>
-                                        <GradientStop Color="#FFFFFFFF" Offset="0.1"/>
-                                        <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
-                                    </LinearGradientBrush>
-                                </Setter.Value>
-                            </Setter>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </ScrollViewer.Style>
-            <DockPanel VerticalAlignment="Bottom">
-                <!-- Messages (newest at bottom) -->
-                <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
-                    <ItemsControl.Resources>
-                        <DataTemplate x:Key="UserMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#2979FF" HorizontalAlignment="Right" MinHeight="0" VerticalAlignment="Center">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Text}" Foreground="White" FontSize="15" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                    <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                        <DataTemplate x:Key="AssistantMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#292929" HorizontalAlignment="Left" MinHeight="0" VerticalAlignment="Center">
-                                <StackPanel>
-                                    <ContentControl Content="{Binding Text}">
-                                        <ContentControl.Style>
-                                            <Style TargetType="ContentControl">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Text}" Value="typing-indicator">
-                                                        <Setter Property="ContentTemplate">
-                                                            <Setter.Value>
-                                                                <DataTemplate>
-                                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
-                                                                        <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
-                                                                            <Ellipse.Triggers>
-                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                    <BeginStoryboard>
-                                                                                        <Storyboard RepeatBehavior="Forever">
-                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0"/>
-                                                                                        </Storyboard>
-                                                                                    </BeginStoryboard>
-                                                                                </EventTrigger>
-                                                                            </Ellipse.Triggers>
-                                                                        </Ellipse>
-                                                                        <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
-                                                                            <Ellipse.Triggers>
-                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                    <BeginStoryboard>
-                                                                                        <Storyboard RepeatBehavior="Forever">
-                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.2"/>
-                                                                                        </Storyboard>
-                                                                                    </BeginStoryboard>
-                                                                                </EventTrigger>
-                                                                            </Ellipse.Triggers>
-                                                                        </Ellipse>
-                                                                        <Ellipse Width="8" Height="8" Fill="#fff">
-                                                                            <Ellipse.Triggers>
-                                                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                                                    <BeginStoryboard>
-                                                                                        <Storyboard RepeatBehavior="Forever">
-                                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.4"/>
-                                                                                        </Storyboard>
-                                                                                    </BeginStoryboard>
-                                                                                </EventTrigger>
-                                                                            </Ellipse.Triggers>
-                                                                        </Ellipse>
-                                                                    </StackPanel>
-                                                                </DataTemplate>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                                <Setter Property="ContentTemplate">
-                                                    <Setter.Value>
-                                                        <DataTemplate>
-                                                            <md:MarkdownViewer Markdown="{Binding}" Foreground="White" FontSize="15" Background="Transparent" Padding="0" Margin="0" />
-                                                        </DataTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </ContentControl.Style>
-                                    </ContentControl>
-                                    <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                        <DataTemplate x:Key="SystemMessageTemplate">
-                            <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#444" BorderBrush="#FFD700" BorderThickness="1" HorizontalAlignment="Left" MinHeight="0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Text}" Foreground="#FFD700" FontSize="14" FontStyle="Italic" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.Resources>
-                    <ItemsControl.ItemTemplateSelector>
-                        <local:MessageTemplateSelector 
-                            UserTemplate="{StaticResource UserMessageTemplate}"
-                            AssistantTemplate="{StaticResource AssistantMessageTemplate}"
-                            SystemTemplate="{StaticResource SystemMessageTemplate}"/>
-                    </ItemsControl.ItemTemplateSelector>
-                </ItemsControl>
-            </DockPanel>
-        </ScrollViewer>
-        <!-- Floating chat input bar at bottom center -->
-        <Border Grid.Row="2" Background="#232323" CornerRadius="12" Padding="8,8,8,8" Margin="0,0,0,0" HorizontalAlignment="Center" Width="420" Effect="{DynamicResource DropShadowEffect}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/> <!-- Screenshot chip -->
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <!-- Screenshot Preview Chip (if present) -->
-                <Border x:Name="ScreenshotChip" Grid.Column="0" Background="#292929" CornerRadius="8" Padding="2" Margin="0,0,4,0" Visibility="Collapsed" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image x:Name="ScreenshotThumbnail" Width="20" Height="20" Stretch="UniformToFill" Margin="0,0,2,0" Cursor="Hand" MouseLeftButtonUp="ScreenshotThumbnail_Click"/>
-                        <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="16" Width="16" Background="Transparent" BorderThickness="0" Foreground="#fff" FontSize="10" Margin="0" Padding="0"/>
-                    </StackPanel>
-                </Border>
-                <Grid Grid.Column="1" VerticalAlignment="Center">
-                    <!-- Overlayed input and waveform -->
-                    <Grid HorizontalAlignment="Stretch" Width="Auto">
-                        <TextBox Name="InputTextBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="28" MaxHeight="120" VerticalScrollBarVisibility="Auto" FontSize="14" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Top" PreviewKeyDown="InputTextBox_PreviewKeyDown" TextChanged="InputTextBox_TextChanged"/>
-                        <TextBlock x:Name="InputPlaceholder"
-                                   Text="Type or hold Ctrl+Space to speak..."
-                                   Foreground="#888"
-                                   FontSize="13"
-                                   Margin="6,0,0,0"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Left"
-                                   IsHitTestVisible="False"
-                                   Visibility="Collapsed"
-                                   Panel.ZIndex="1"
-                                   Background="Transparent"/>
-                        <Canvas x:Name="WaveformCanvas" Height="12" Width="60" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" Panel.ZIndex="10" Margin="0,0,0,0" IsHitTestVisible="False">
-                            <Path x:Name="WaveformPath" Stroke="#fff" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-                        </Canvas>
-                    </Grid>
+    <Border CornerRadius="8" BorderBrush="#FFE0E0E0" BorderThickness="1">
+        <Grid Width="420">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/> <!-- Header bar -->
+                <RowDefinition Height="*"/> <!-- Message area grows to fill -->
+                <RowDefinition Height="Auto"/> <!-- Input bar at bottom -->
+            </Grid.RowDefinitions>
+            <!-- Modern Header Bar -->
+            <Border Grid.Row="0" Background="#232323" CornerRadius="8,8,0,0" Padding="0,0,0,0" Height="32" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown" Width="420">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Ask.AI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
+                    <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
+                    <Button x:Name="NewChatButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New Chat" Click="NewChatButton_Click"/>
+                    <Button x:Name="HistoryButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE823;" ToolTip="Chat History" Click="HistoryButton_Click"/>
+                    <Button x:Name="SettingsButton" Grid.Column="4" Style="{StaticResource IconButtonStyle}" Content="&#xE713;" ToolTip="Settings" Click="SettingsButton_Click"/>
+                    <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="True" Style="{StaticResource PinButtonStyle}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
                 </Grid>
-                <Button x:Name="CameraButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE114;" ToolTip="Screenshot"/>
-                <Button x:Name="SendButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE122;" ToolTip="Send" Click="SendButton_Click"/>
-                <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="28" Height="28" Margin="4,0,0,0" ToolTip="Voice reply" FontSize="16" Content="🗣️" IsChecked="False" Background="Transparent" Foreground="White" BorderThickness="0"/>
-                <ToggleButton x:Name="TTSProviderToggle" Grid.Column="5" Width="28" Height="28" Margin="4,0,0,0" ToolTip="Toggle Premium Voice (ElevenLabs)" FontSize="16" Background="Transparent" Foreground="White" BorderThickness="0">
-                    <TextBlock x:Name="TTSIcon" FontFamily="Segoe Fluent Icons" Text="&#xE753;"/>
-                    <ToggleButton.Style>
-                        <Style TargetType="ToggleButton">
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter Property="ToolTip" Value="Using Premium Voice (ElevenLabs)"/>
-                                    <Setter Property="Foreground" Value="#FFD700"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ToggleButton.Style>
-                    <ToggleButton.Triggers>
-                        <EventTrigger RoutedEvent="ToggleButton.Checked">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TTSIcon" Storyboard.TargetProperty="Text">
-                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="&#xE734;"/>
-                                    </ObjectAnimationUsingKeyFrames>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="ToggleButton.Unchecked">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TTSIcon" Storyboard.TargetProperty="Text">
-                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="&#xE753;"/>
-                                    </ObjectAnimationUsingKeyFrames>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </ToggleButton.Triggers>
-                </ToggleButton>
-            </Grid>
-        </Border>
-        <!-- Modal overlay for full-size screenshot preview (hidden by default) -->
-        <Border x:Name="ScreenshotModal" Background="#CC111111" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="1000" MouseDown="ScreenshotModal_MouseDown" MinWidth="600" MinHeight="500" MaxWidth="1200" MaxHeight="900">
-            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="#222" CornerRadius="16" Padding="12" MinWidth="400" MinHeight="300" MaxWidth="900" MaxHeight="700">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#99000000" Opacity="0.7"/>
-                </Border.Effect>
-                <Image x:Name="ScreenshotModalImage" Stretch="Uniform" MaxWidth="640" MaxHeight="480" MinWidth="320" MinHeight="180"/>
             </Border>
-        </Border>
-        <!-- History Popup -->
-        <Popup x:Name="HistoryPopup" PlacementTarget="{Binding ElementName=HistoryButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" IsOpen="False">
-            <Border Background="#232323" CornerRadius="8" Padding="4" Effect="{DynamicResource DropShadowEffect}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MinHeight="60" MaxHeight="340">
-                    <StackPanel x:Name="HistoryPopupPanel" MinWidth="260" />
-                </ScrollViewer>
+            <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
+            <Border x:Name="ScreenshotPreviewPane" Grid.Row="1" Background="#222" CornerRadius="12" Padding="8" Margin="16,8,16,8" Visibility="Collapsed" VerticalAlignment="Top" Panel.ZIndex="100">
+                <Grid>
+                    <Image x:Name="ScreenshotPreviewImage" Stretch="Uniform" MaxWidth="900" MaxHeight="600" MouseLeftButtonUp="ScreenshotPreviewImage_Click" Cursor="Hand"/>
+                    <Button x:Name="RemoveScreenshotPreviewButton" Content="✖" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,0,0" Click="RemoveScreenshotPreviewButton_Click" Background="#333" Foreground="#fff" BorderThickness="0" FontSize="16"/>
+                    <Viewbox x:Name="ScreenshotLoadingSpinner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="32" Height="32">
+                        <TextBlock Text="⏳" FontSize="32"/>
+                    </Viewbox>
+                </Grid>
             </Border>
-        </Popup>
-    </Grid>
+            <!-- Message area with fade-out scroll -->
+            <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4" PanningMode="Both" CanContentScroll="True" PreviewMouseWheel="MessagesScrollViewer_PreviewMouseWheel" MaxHeight="1000">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="OpacityMask" Value="{x:Null}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ComputedVerticalScrollBarVisibility, RelativeSource={RelativeSource Self}}" Value="Visible">
+                                <Setter Property="OpacityMask">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#00FFFFFF" Offset="0.0"/>
+                                            <GradientStop Color="#FFFFFFFF" Offset="0.1"/>
+                                            <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <DockPanel VerticalAlignment="Bottom">
+                    <!-- Messages (newest at bottom) -->
+                    <ItemsControl Name="MessagesList" ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=Window}}">
+                        <ItemsControl.Resources>
+                            <DataTemplate x:Key="UserMessageTemplate">
+                                <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#2979FF" HorizontalAlignment="Right" MinHeight="0" VerticalAlignment="Center">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Text}" Foreground="White" FontSize="15" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                            <DataTemplate x:Key="AssistantMessageTemplate">
+                                <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#292929" HorizontalAlignment="Left" MinHeight="0" VerticalAlignment="Center">
+                                    <StackPanel>
+                                        <ContentControl Content="{Binding Text}">
+                                            <ContentControl.Style>
+                                                <Style TargetType="ContentControl">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text}" Value="typing-indicator">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
+                                                                            <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
+                                                                                <Ellipse.Triggers>
+                                                                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                        <BeginStoryboard>
+                                                                                            <Storyboard RepeatBehavior="Forever">
+                                                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0"/>
+                                                                                            </Storyboard>
+                                                                                        </BeginStoryboard>
+                                                                                    </EventTrigger>
+                                                                                </Ellipse.Triggers>
+                                                                            </Ellipse>
+                                                                            <Ellipse Width="8" Height="8" Fill="#fff" Margin="0,0,4,0">
+                                                                                <Ellipse.Triggers>
+                                                                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                        <BeginStoryboard>
+                                                                                            <Storyboard RepeatBehavior="Forever">
+                                                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.2"/>
+                                                                                            </Storyboard>
+                                                                                        </BeginStoryboard>
+                                                                                    </EventTrigger>
+                                                                                </Ellipse.Triggers>
+                                                                            </Ellipse>
+                                                                            <Ellipse Width="8" Height="8" Fill="#fff">
+                                                                                <Ellipse.Triggers>
+                                                                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                                                        <BeginStoryboard>
+                                                                                            <Storyboard RepeatBehavior="Forever">
+                                                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.6" AutoReverse="True" BeginTime="0:0:0.4"/>
+                                                                                            </Storyboard>
+                                                                                        </BeginStoryboard>
+                                                                                    </EventTrigger>
+                                                                                </Ellipse.Triggers>
+                                                                            </Ellipse>
+                                                                        </StackPanel>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                    <Setter Property="ContentTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate>
+                                                                <md:MarkdownViewer Markdown="{Binding}" Foreground="White" FontSize="15" Background="Transparent" Padding="0" Margin="0" />
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ContentControl.Style>
+                                        </ContentControl>
+                                        <Image Source="{Binding ImagePath}" Width="340" MaxHeight="220" Stretch="Uniform" Margin="0,4,0,0" Cursor="Hand" Visibility="{Binding ImagePath, Converter={StaticResource NullToVisibilityConverter}}" MouseLeftButtonUp="MessageImage_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                            <DataTemplate x:Key="SystemMessageTemplate">
+                                <Border CornerRadius="12" Padding="8,8" Margin="0,0,0,8" Background="#444" BorderBrush="#FFD700" BorderThickness="1" HorizontalAlignment="Left" MinHeight="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Text}" Foreground="#FFD700" FontSize="14" FontStyle="Italic" MinHeight="0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.Resources>
+                        <ItemsControl.ItemTemplateSelector>
+                            <local:MessageTemplateSelector 
+                                UserTemplate="{StaticResource UserMessageTemplate}"
+                                AssistantTemplate="{StaticResource AssistantMessageTemplate}"
+                                SystemTemplate="{StaticResource SystemMessageTemplate}"/>
+                        </ItemsControl.ItemTemplateSelector>
+                    </ItemsControl>
+                </DockPanel>
+            </ScrollViewer>
+            <!-- Floating chat input bar at bottom center -->
+            <Border Grid.Row="2" Background="#232323" CornerRadius="12" Padding="8,8,8,8" Margin="0,0,0,0" HorizontalAlignment="Center" Width="420" Effect="{DynamicResource DropShadowEffect}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/> <!-- Screenshot chip -->
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Screenshot Preview Chip (if present) -->
+                    <Border x:Name="ScreenshotChip" Grid.Column="0" Background="#292929" CornerRadius="8" Padding="2" Margin="0,0,4,0" Visibility="Collapsed" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image x:Name="ScreenshotThumbnail" Width="20" Height="20" Stretch="UniformToFill" Margin="0,0,2,0" Cursor="Hand" MouseLeftButtonUp="ScreenshotThumbnail_Click"/>
+                            <Button Content="✖" Click="RemoveScreenshotButton_Click" Height="16" Width="16" Background="Transparent" BorderThickness="0" Foreground="#fff" FontSize="10" Margin="0" Padding="0"/>
+                        </StackPanel>
+                    </Border>
+                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                        <!-- Overlayed input and waveform -->
+                        <Grid HorizontalAlignment="Stretch" Width="Auto">
+                            <TextBox Name="InputTextBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="28" MaxHeight="120" VerticalScrollBarVisibility="Auto" FontSize="14" Background="#232323" Foreground="White" BorderThickness="0" VerticalContentAlignment="Top" PreviewKeyDown="InputTextBox_PreviewKeyDown" TextChanged="InputTextBox_TextChanged"/>
+                            <TextBlock x:Name="InputPlaceholder"
+                                       Text="Type or hold Ctrl+Space to speak..."
+                                       Foreground="#888"
+                                       FontSize="13"
+                                       Margin="6,0,0,0"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"
+                                       Panel.ZIndex="1"
+                                       Background="Transparent"/>
+                            <Canvas x:Name="WaveformCanvas" Height="12" Width="60" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" Panel.ZIndex="10" Margin="0,0,0,0" IsHitTestVisible="False">
+                                <Path x:Name="WaveformPath" Stroke="#fff" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            </Canvas>
+                        </Grid>
+                    </Grid>
+                    <Button x:Name="CameraButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE114;" ToolTip="Screenshot"/>
+                    <Button x:Name="SendButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE122;" ToolTip="Send" Click="SendButton_Click"/>
+                    <ToggleButton x:Name="VoiceReplyToggle" Grid.Column="4" Width="28" Height="28" Margin="4,0,0,0" ToolTip="Voice reply" FontSize="16" Content="🗣️" IsChecked="False" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Grid>
+            </Border>
+            <!-- Modal overlay for full-size screenshot preview (hidden by default) -->
+            <Border x:Name="ScreenshotModal" Background="#CC111111" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="1000" MouseDown="ScreenshotModal_MouseDown" MinWidth="600" MinHeight="500" MaxWidth="1200" MaxHeight="900">
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="#222" CornerRadius="16" Padding="12" MinWidth="400" MinHeight="300" MaxWidth="900" MaxHeight="700">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#99000000" Opacity="0.7"/>
+                    </Border.Effect>
+                    <Image x:Name="ScreenshotModalImage" Stretch="Uniform" MaxWidth="640" MaxHeight="480" MinWidth="320" MinHeight="180"/>
+                </Border>
+            </Border>
+            <!-- History Popup -->
+            <Popup x:Name="HistoryPopup" PlacementTarget="{Binding ElementName=HistoryButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" IsOpen="False">
+                <Border Background="#232323" CornerRadius="8" Padding="4" Effect="{DynamicResource DropShadowEffect}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MinHeight="60" MaxHeight="340">
+                        <StackPanel x:Name="HistoryPopupPanel" MinWidth="260" />
+                    </ScrollViewer>
+                </Border>
+            </Popup>
+        </Grid>
+    </Border>
 </local:OverlayWindow> 

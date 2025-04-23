@@ -3,6 +3,7 @@ using System.IO;
 
 namespace UI
 {
+    public enum VoiceProvider { Basic, Pro }
     public class Profile
     {
         public string Name { get; set; } = "";
@@ -10,6 +11,8 @@ namespace UI
         public string Interests { get; set; } = "";
         public string PreferredTone { get; set; } = "";
         public string Goals { get; set; } = "";
+        public VoiceProvider VoiceProvider { get; set; } = VoiceProvider.Basic;
+        public string OverlayHotkey { get; set; } = "Alt+Space";
 
         public static string ProfilePath => "profile.json";
 

@@ -95,6 +95,16 @@ namespace UI
             public List<Message> Messages { get; set; } = new List<Message>();
         }
 
+        private VoskStreamingRecognizer? _streamingRecognizer;
+
+        private bool _recognizerCooldown = false;
+
+        private readonly object _recognizerLock = new();
+
+        private bool _voiceActivationMode = false;
+
+        private string _committedText = string.Empty;
+
         public Overlay(IntPtr previousActiveWindow, string? screenshotPath)
         {
             DotEnv.Load();
@@ -187,23 +197,14 @@ namespace UI
             ScreenshotPreviewImage.Source = null;
         }
 
-        private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
+        private async void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
         {
             if (e.KeyCode == System.Windows.Forms.Keys.ControlKey || e.KeyCode == System.Windows.Forms.Keys.LControlKey || e.KeyCode == System.Windows.Forms.Keys.RControlKey) _ctrlDown = true;
             if (e.KeyCode == System.Windows.Forms.Keys.Space) _spaceDown = true;
-            if (_ctrlDown && _spaceDown && !_isRecording && this.IsVisible && InputTextBox.IsFocused && this.IsActive)
+            if (_ctrlDown && _spaceDown && !_isRecording && !_recognizerCooldown && this.IsVisible && InputTextBox.IsFocused && this.IsActive)
             {
                 _recordStartTime = DateTime.Now;
-                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                timer.Tick += (s, ev) =>
-                {
-                    timer.Stop();
-                    if (_ctrlDown && _spaceDown && !_isRecording && this.IsVisible && InputTextBox.IsFocused && this.IsActive)
-                    {
-                        StartVoiceRecording();
-                    }
-                };
-                timer.Start();
+                try { StartVoiceRecording(); } catch (Exception ex) { System.Windows.MessageBox.Show($"Vosk error: {ex.Message}"); }
             }
         }
 
@@ -214,44 +215,134 @@ namespace UI
             if (_isRecording && (!_ctrlDown || !_spaceDown))
             {
                 await StopVoiceRecordingAsync();
+                // After stopping, always append a single space
+                if (!InputTextBox.Text.EndsWith(" "))
+                {
+                    InputTextBox.Text += " ";
+                }
+                _committedText = InputTextBox.Text; // Keep buffer in sync for next session
+                InputTextBox.CaretIndex = InputTextBox.Text.Length;
             }
         }
 
         private void StartVoiceRecording()
         {
-            _isRecording = true;
-            _lastTempFile = $"temp_{DateTime.Now:yyyyMMdd_HHmmss_fff}.wav";
-            _recorder = new AudioRecorder(_lastTempFile);
-            _recorder.StartRecording();
-            WaveformCanvas.Visibility = Visibility.Visible;
-            AnimateWaveform();
+            lock (_recognizerLock)
+            {
+                if (_isRecording || _recognizerCooldown) return;
+                _isRecording = true;
+                _voiceActivationMode = false; // Hotkey session
+                _committedText = InputTextBox.Text; // Start with current text
+                _streamingRecognizer?.Stop();
+                _streamingRecognizer = null;
+                string modelPath = Environment.GetEnvironmentVariable("VOSK_MODEL_PATH") ?? @"C:\Users\Elijah\Documents\Coding Projects\AskAI\src\Voice\vosk-model";
+                try
+                {
+                    string originalText = InputTextBox.Text;
+                    _streamingRecognizer = new VoskStreamingRecognizer(modelPath);
+                    _streamingRecognizer.Start(
+                        partial => Dispatcher.Invoke(() => {
+                            try {
+                                var p = ParsePartial(partial);
+                                Console.WriteLine($"[DEBUG] Partial: '{p}'");
+                                if (!string.IsNullOrWhiteSpace(p))
+                                {
+                                    InputTextBox.Text = _committedText + p;
+                                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
+                                    Console.WriteLine($"[DEBUG] Set InputTextBox.Text (partial) to: '{InputTextBox.Text}'");
+                                }
+                            } catch (Exception ex) { LogRecognizerError(ex); ForceStopRecognizer(); }
+                        }),
+                        final => Dispatcher.BeginInvoke(new Action(async () => {
+                            bool needCooldown = false;
+                            try {
+                                var f = ParseFinal(final);
+                                Console.WriteLine($"[DEBUG] Final: '{f}'");
+                                if (!string.IsNullOrWhiteSpace(f))
+                                {
+                                    if (f.Trim().ToLowerInvariant() == "skai send")
+                                    {
+                                        await StopVoiceRecordingAsync();
+                                        SendButton_Click(null!, null!);
+                                        return;
+                                    }
+                                    if (_voiceActivationMode) {
+                                        // Only update committedText in voice-activation mode
+                                        _committedText += f;
+                                        InputTextBox.Text = _committedText;
+                                        InputTextBox.CaretIndex = InputTextBox.Text.Length;
+                                        Console.WriteLine($"[DEBUG] Set InputTextBox.Text (final) to: '{InputTextBox.Text}'");
+                                    }
+                                    // In hotkey mode, do nothing on final except for 'skai send'
+                                    if (!_voiceActivationMode) {
+                                        // In hotkey mode, always sync buffer after a final
+                                        _committedText = InputTextBox.Text;
+                                        if (!_committedText.EndsWith(" "))
+                                            _committedText += " ";
+                                    }
+                                }
+                                // Do nothing if f is empty or whitespace
+                            } catch (Exception ex) { LogRecognizerError(ex); }
+                            finally {
+                                // Only stop recognizer if in voice activation mode or user said 'skai send'
+                                if (_voiceActivationMode) {
+                                    lock (_recognizerLock)
+                                    {
+                                        _isRecording = false;
+                                        _streamingRecognizer?.Stop();
+                                        _streamingRecognizer = null;
+                                        _recognizerCooldown = true;
+                                        WaveformCanvas.Visibility = Visibility.Collapsed;
+                                        needCooldown = true;
+                                    }
+                                    if (needCooldown) {
+                                        await Task.Delay(250);
+                                        _recognizerCooldown = false;
+                                    }
+                                }
+                            }
+                        })),
+                        false // useSilenceDetection: false for hotkey sessions
+                    );
+                }
+                catch (Exception ex)
+                {
+                    LogRecognizerError(ex);
+                    _isRecording = false;
+                    WaveformCanvas.Visibility = Visibility.Collapsed;
+                }
+                WaveformCanvas.Visibility = Visibility.Visible;
+                AnimateWaveform();
+            }
         }
 
         private async Task StopVoiceRecordingAsync()
         {
             _isRecording = false;
             WaveformCanvas.Visibility = Visibility.Collapsed;
-            if (_recorder != null)
+            _streamingRecognizer?.Stop();
+            _streamingRecognizer = null;
+            await Task.Delay(100);
+        }
+
+        private string ParsePartial(string partialJson)
+        {
+            try
             {
-                _recorder.StopRecording();
-                await _recorder.RecordingStoppedTask;
-                _recorder = null;
-                await Task.Delay(100);
-                if (_lastTempFile != null)
-                {
-                    var whisper = new WhisperService();
-                    var transcript = await whisper.TranscribeAsync(_lastTempFile);
-                    try { System.IO.File.Delete(_lastTempFile); } catch { }
-                    if (!string.IsNullOrWhiteSpace(transcript))
-                    {
-                        if (!string.IsNullOrWhiteSpace(InputTextBox.Text))
-                            InputTextBox.Text += " ";
-                        InputTextBox.Text += transcript;
-                        InputTextBox.Focus();
-                        InputTextBox.CaretIndex = InputTextBox.Text.Length;
-                    }
-                }
+                using var doc = System.Text.Json.JsonDocument.Parse(partialJson);
+                return doc.RootElement.TryGetProperty("partial", out var p) ? p.GetString() ?? string.Empty : string.Empty;
             }
+            catch { return string.Empty; }
+        }
+
+        private string ParseFinal(string finalJson)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(finalJson);
+                return doc.RootElement.TryGetProperty("text", out var t) ? t.GetString() ?? string.Empty : string.Empty;
+            }
+            catch { return string.Empty; }
         }
 
         private void AnimateWaveform()
@@ -643,6 +734,8 @@ namespace UI
             HideScreenshotAttachedIndicator();
             ScreenshotPreviewPane.Visibility = Visibility.Collapsed;
             ScreenshotPreviewImage.Source = null;
+            // Stop voice recording if window loses focus
+            if (_isRecording) _ = StopVoiceRecordingAsync();
         }
 
         private void SaveMessages()
@@ -803,7 +896,7 @@ namespace UI
             }
         }
 
-        public bool IsUsingElevenLabsTTS => TTSProviderToggle != null && TTSProviderToggle.IsChecked == true;
+        public bool IsUsingElevenLabsTTS => _profile.VoiceProvider == VoiceProvider.Pro;
 
         public async Task SpeakTextAsync(string text, string outputPath)
         {
@@ -944,6 +1037,24 @@ namespace UI
                 ScreenshotModalImage.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(msg.ImagePath));
                 ScreenshotModal.Visibility = Visibility.Visible;
             }
+        }
+
+        private void ForceStopRecognizer()
+        {
+            lock (_recognizerLock)
+            {
+                _isRecording = false;
+                _streamingRecognizer?.Stop();
+                _streamingRecognizer = null;
+                _recognizerCooldown = true;
+                WaveformCanvas.Visibility = Visibility.Collapsed;
+                Task.Delay(250).ContinueWith(_ => _recognizerCooldown = false);
+            }
+        }
+
+        private void LogRecognizerError(Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Vosk error: {ex.Message}", "Recognizer Error");
         }
     }
 } 

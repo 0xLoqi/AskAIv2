@@ -66,6 +66,12 @@
                         </Style>
                     </Button.Style>
                 </Button>
+                <TextBlock Text="Overlay Hotkey" Foreground="#fff" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                <TextBox x:Name="OverlayHotkeyTextBox" Height="28" Margin="0,0,0,12" Text="Alt+Space"/>
+                <ComboBox x:Name="VoiceProviderComboBox" Height="32" Margin="0,0,0,12" SelectedIndex="0">
+                    <ComboBoxItem Content="Basic Voice (Azure)" Tag="Basic"/>
+                    <ComboBoxItem Content="Pro Voice (ElevenLabs)" Tag="Pro"/>
+                </ComboBox>
                 <Button x:Name="CloseButton" Content="Close" Height="32" Click="CloseButton_Click" Margin="0,12,0,0">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
