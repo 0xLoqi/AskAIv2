@@ -14,6 +14,12 @@ A modern, privacy-conscious, and deeply personal desktop AI companion for Window
 
 ---
 
+<div align="center">
+  <img src="assets/branding/skai_portrait.png" alt="Skai mascot portrait" width="240" style="border-radius:16px;">
+</div>
+
+---
+
 ## ✨ Why Skai?
 - **Instant, global overlay:** Summon your AI from anywhere with <kbd>Alt</kbd>+<kbd>Space</kbd>.
 - **Personality & Memory:** Skai, your AI, learns about you, adapts, and remembers your preferences.
