@@ -21,6 +21,7 @@ using System.IO;
 using System.Drawing;
 using UI;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 namespace UI
 {
@@ -75,7 +76,7 @@ namespace UI
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
-        private bool _isRecording = false;
+        public bool _isRecording;
         private const int AltSpaceKeyCode = 32; // Space
         private bool _altDown = false;
         private bool _spaceDown = false;
@@ -105,6 +106,14 @@ namespace UI
 
         private string _committedText = string.Empty;
 
+        private bool _isPinned = true;
+
+        private bool _firstActivation = true;
+
+        private bool _hasUserInteracted = false;
+
+        private bool _canAutoHide = false;
+
         public Overlay(IntPtr previousActiveWindow, string? screenshotPath)
         {
             DotEnv.Load();
@@ -128,6 +137,11 @@ namespace UI
             CameraButton.Click += CameraButton_Click;
             InputTextBox.TextChanged += InputTextBox_TextChanged;
             this.Deactivated += Overlay_Deactivated;
+            this.Activated += (s, e) => _canAutoHide = true;
+            // Track user interaction
+            this.GotKeyboardFocus += (s, e) => _hasUserInteracted = true;
+            this.MouseDown += (s, e) => _hasUserInteracted = true;
+            InputTextBox.PreviewMouseDown += InputTextBox_PreviewMouseDown;
             // Remove: TestSoundButton.Click += TestSoundButton_Click;
         }
 
@@ -137,6 +151,10 @@ namespace UI
 
         private void Overlay_Loaded(object sender, RoutedEventArgs e)
         {
+            this.Show();
+            this.Activate();
+            // Ensure pin is set to true on first load
+            PinButton.IsChecked = true;
             _globalHook = Hook.GlobalEvents();
             _globalHook.KeyDown += GlobalHook_KeyDown;
             _globalHook.KeyUp += GlobalHook_KeyUp;
@@ -230,12 +248,15 @@ namespace UI
             lock (_recognizerLock)
             {
                 if (_isRecording || _recognizerCooldown) return;
+                PlayUISound("listening_notify_start.wav");
                 _isRecording = true;
                 _voiceActivationMode = false; // Hotkey session
                 _committedText = InputTextBox.Text; // Start with current text
                 _streamingRecognizer?.Stop();
                 _streamingRecognizer = null;
-                string modelPath = Environment.GetEnvironmentVariable("VOSK_MODEL_PATH") ?? @"C:\Users\Elijah\Documents\Coding Projects\AskAI\src\Voice\vosk-model";
+                string modelPath = _profile.VoskModel == VoskModelSize.Large
+                    ? Path.Combine("src", "Voice", "vosk-model-plus")
+                    : Path.Combine("src", "Voice", "vosk-model");
                 try
                 {
                     string originalText = InputTextBox.Text;
@@ -247,7 +268,10 @@ namespace UI
                                 Console.WriteLine($"[DEBUG] Partial: '{p}'");
                                 if (!string.IsNullOrWhiteSpace(p))
                                 {
-                                    InputTextBox.Text = _committedText + p;
+                                    string prefix = _committedText;
+                                    if (!string.IsNullOrWhiteSpace(prefix) && !prefix.EndsWith(" "))
+                                        prefix += " ";
+                                    InputTextBox.Text = prefix + p;
                                     InputTextBox.CaretIndex = InputTextBox.Text.Length;
                                     Console.WriteLine($"[DEBUG] Set InputTextBox.Text (partial) to: '{InputTextBox.Text}'");
                                 }
@@ -257,31 +281,47 @@ namespace UI
                             bool needCooldown = false;
                             try {
                                 var f = ParseFinal(final);
-                                Console.WriteLine($"[DEBUG] Final: '{f}'");
-                                if (!string.IsNullOrWhiteSpace(f))
+                                var sendText = f.Trim().ToLowerInvariant();
+                                // Clean up for robust detection
+                                string cleaned = Regex.Replace(sendText, @"[.?!,;:]+$", "").Trim();
+                                if (cleaned == "sky send" || cleaned == "skai send" || cleaned == "send" ||
+                                    cleaned.EndsWith(" sky send") || cleaned.EndsWith(" skai send") || cleaned.EndsWith(" send"))
                                 {
-                                    if (f.Trim().ToLowerInvariant() == "skai send")
+                                    // Remove the send phrase from the end of the buffer/textbox
+                                    _committedText = Regex.Replace(_committedText, @"(sky send|skai send|send)[.?!,;:]*\s*$", "", RegexOptions.IgnoreCase).TrimEnd();
+                                    InputTextBox.Text = _committedText;
+                                    InputTextBox.CaretIndex = _committedText.Length;
+
+                                    await StopVoiceRecordingAsync();
+                                    SendButton_Click(null!, null!);
+                                    ListeningStatusLabel.Content = string.Empty;
+                                    ListeningStatusLabel.Visibility = Visibility.Collapsed;
+                                    lock (_recognizerLock)
                                     {
-                                        await StopVoiceRecordingAsync();
-                                        SendButton_Click(null!, null!);
-                                        return;
+                                        _isRecording = false;
+                                        _streamingRecognizer?.Stop();
+                                        _streamingRecognizer = null;
+                                        _recognizerCooldown = true;
+                                        WaveformCanvas.Visibility = Visibility.Collapsed;
                                     }
-                                    if (_voiceActivationMode) {
-                                        // Only update committedText in voice-activation mode
-                                        _committedText += f;
-                                        InputTextBox.Text = _committedText;
-                                        InputTextBox.CaretIndex = InputTextBox.Text.Length;
-                                        Console.WriteLine($"[DEBUG] Set InputTextBox.Text (final) to: '{InputTextBox.Text}'");
-                                    }
-                                    // In hotkey mode, do nothing on final except for 'skai send'
-                                    if (!_voiceActivationMode) {
-                                        // In hotkey mode, always sync buffer after a final
-                                        _committedText = InputTextBox.Text;
-                                        if (!_committedText.EndsWith(" "))
-                                            _committedText += " ";
-                                    }
+                                    await Task.Delay(250);
+                                    _recognizerCooldown = false;
+                                    return;
                                 }
-                                // Do nothing if f is empty or whitespace
+                                if (_voiceActivationMode) {
+                                    // Only update committedText in voice-activation mode
+                                    _committedText += f;
+                                    InputTextBox.Text = _committedText;
+                                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
+                                    Console.WriteLine($"[DEBUG] Set InputTextBox.Text (final) to: '{InputTextBox.Text}'");
+                                }
+                                // In hotkey mode, do nothing on final except for 'skai send'
+                                if (!_voiceActivationMode) {
+                                    // In hotkey mode, always sync buffer after a final
+                                    _committedText = InputTextBox.Text;
+                                    if (!_committedText.EndsWith(" "))
+                                        _committedText += " ";
+                                }
                             } catch (Exception ex) { LogRecognizerError(ex); }
                             finally {
                                 // Only stop recognizer if in voice activation mode or user said 'skai send'
@@ -318,6 +358,7 @@ namespace UI
 
         private async Task StopVoiceRecordingAsync()
         {
+            PlayUISound("listening_notify_stop.wav");
             _isRecording = false;
             WaveformCanvas.Visibility = Visibility.Collapsed;
             _streamingRecognizer?.Stop();
@@ -637,7 +678,7 @@ namespace UI
             ScreenshotModalImage.Source = null;
         }
 
-        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        public async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             var text = InputTextBox.Text;
             if (string.IsNullOrWhiteSpace(text) && string.IsNullOrEmpty(_lastScreenshotPath))
@@ -717,17 +758,18 @@ namespace UI
 
         private void PinButton_Checked(object sender, RoutedEventArgs e)
         {
-            // Do nothing (stay open)
+            _isPinned = true;
         }
 
         private void PinButton_Unchecked(object sender, RoutedEventArgs e)
         {
+            _isPinned = false;
             this.Hide(); // Auto-dismiss when unpinned
         }
 
         private void Overlay_Deactivated(object? sender, EventArgs e)
         {
-            if (PinButton.IsChecked == false)
+            if (_canAutoHide && !_isPinned)
             {
                 this.Hide();
             }
@@ -1055,6 +1097,147 @@ namespace UI
         private void LogRecognizerError(Exception ex)
         {
             System.Windows.MessageBox.Show($"Vosk error: {ex.Message}", "Recognizer Error");
+        }
+
+        private void ListenForHotwordButton_Click(object sender, RoutedEventArgs e)
+        {
+            string modelPath = Environment.GetEnvironmentVariable("VOSK_MODEL_PATH") ?? @"C:\Users\Elijah\Documents\Coding Projects\AskAI\src\Voice\vosk-model";
+            ListeningStatusLabel.Content = "Listening...";
+            ListeningStatusLabel.Visibility = Visibility.Visible;
+            Task.Run(() => Voice.VoskHotwordListener.ListenForHotword(modelPath, "computer", () =>
+            {
+                Dispatcher.Invoke(() => StartVoiceDictationByHotword());
+            }));
+        }
+
+        public void StartVoiceDictationByHotword()
+        {
+            lock (_recognizerLock)
+            {
+                if (_isRecording || _recognizerCooldown) return;
+                PlayUISound("listening_notify_start.wav");
+                _isRecording = true;
+                _voiceActivationMode = true; // Voice-activation session
+                _committedText = InputTextBox.Text; // Start with current text
+                _streamingRecognizer?.Stop();
+                _streamingRecognizer = null;
+                string modelPath = Environment.GetEnvironmentVariable("VOSK_MODEL_PATH") ?? @"C:\Users\Elijah\Documents\Coding Projects\AskAI\src\Voice\vosk-model";
+                ListeningStatusLabel.Content = "Dictating...";
+                ListeningStatusLabel.Visibility = Visibility.Visible;
+                try
+                {
+                    _streamingRecognizer = new VoskStreamingRecognizer(modelPath);
+                    _streamingRecognizer.Start(
+                        partial => Dispatcher.Invoke(() => {
+                            try {
+                                var p = ParsePartial(partial);
+                                if (!string.IsNullOrWhiteSpace(p))
+                                {
+                                    string prefix = _committedText;
+                                    if (!string.IsNullOrWhiteSpace(prefix) && !prefix.EndsWith(" "))
+                                        prefix += " ";
+                                    InputTextBox.Text = prefix + p;
+                                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
+                                }
+                            } catch (Exception ex) { LogRecognizerError(ex); ForceStopRecognizer(); }
+                        }),
+                        final => Dispatcher.BeginInvoke(new Action(async () => {
+                            try {
+                                var f = ParseFinal(final);
+                                var sendText = f.Trim().ToLowerInvariant();
+                                // Clean up for robust detection
+                                string cleaned = Regex.Replace(sendText, @"[.?!,;:]+$", "").Trim();
+                                if (cleaned == "sky send" || cleaned == "skai send" || cleaned == "send" ||
+                                    cleaned.EndsWith(" sky send") || cleaned.EndsWith(" skai send") || cleaned.EndsWith(" send"))
+                                {
+                                    // Remove the send phrase from the end of the buffer/textbox
+                                    _committedText = Regex.Replace(_committedText, @"(sky send|skai send|send)[.?!,;:]*\s*$", "", RegexOptions.IgnoreCase).TrimEnd();
+                                    InputTextBox.Text = _committedText;
+                                    InputTextBox.CaretIndex = _committedText.Length;
+
+                                    await StopVoiceRecordingAsync();
+                                    SendButton_Click(null!, null!);
+                                    ListeningStatusLabel.Content = string.Empty;
+                                    ListeningStatusLabel.Visibility = Visibility.Collapsed;
+                                    lock (_recognizerLock)
+                                    {
+                                        _isRecording = false;
+                                        _streamingRecognizer?.Stop();
+                                        _streamingRecognizer = null;
+                                        _recognizerCooldown = true;
+                                        WaveformCanvas.Visibility = Visibility.Collapsed;
+                                    }
+                                    await Task.Delay(250);
+                                    _recognizerCooldown = false;
+                                    return;
+                                }
+                                // Only append to buffer if not a send command
+                                if (_voiceActivationMode && !string.IsNullOrWhiteSpace(f)) {
+                                    if (!_committedText.EndsWith(" ") && !string.IsNullOrWhiteSpace(_committedText))
+                                        _committedText += " ";
+                                    _committedText += f;
+                                    InputTextBox.Text = _committedText;
+                                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
+                                }
+                                if (!_voiceActivationMode) {
+                                    _committedText = InputTextBox.Text;
+                                    if (!_committedText.EndsWith(" "))
+                                        _committedText += " ";
+                                }
+                            } catch (Exception ex) { LogRecognizerError(ex); }
+                        })),
+                        true // useSilenceDetection: true for voice-activation mode
+                    );
+                }
+                catch (Exception ex)
+                {
+                    LogRecognizerError(ex);
+                    _isRecording = false;
+                    WaveformCanvas.Visibility = Visibility.Collapsed;
+                    ListeningStatusLabel.Content = string.Empty;
+                    ListeningStatusLabel.Visibility = Visibility.Collapsed;
+                }
+                WaveformCanvas.Visibility = Visibility.Visible;
+                AnimateWaveform();
+            }
+        }
+
+        private void InputTextBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_isRecording)
+            {
+                _ = StopVoiceRecordingAsync();
+            }
+        }
+
+        private void PlayUISound(string soundName)
+        {
+            try
+            {
+                // Prefer .wav, fallback to .mp3
+                string baseName = Path.GetFileNameWithoutExtension(soundName);
+                string wavPath = Path.Combine("Assets", "Sounds", baseName + ".wav");
+                string mp3Path = Path.Combine("Assets", "Sounds", baseName + ".mp3");
+                string soundPath = File.Exists(wavPath) ? wavPath : mp3Path;
+                if (!File.Exists(soundPath))
+                {
+                    MessageBox.Show($"Sound file not found: {soundPath}");
+                    return;
+                }
+                MessageBox.Show($"Playing sound: {soundPath}");
+                using var audioFile = new NAudio.Wave.AudioFileReader(soundPath);
+                using var outputDevice = new NAudio.Wave.WaveOutEvent();
+                outputDevice.Init(audioFile);
+                outputDevice.Play();
+                while (outputDevice.PlaybackState == NAudio.Wave.PlaybackState.Playing)
+                {
+                    System.Threading.Thread.Sleep(50);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Sound error: {ex.Message}");
+            }
         }
     }
 } 

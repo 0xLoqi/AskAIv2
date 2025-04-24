@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace Voice
 {
@@ -104,7 +105,15 @@ namespace Voice
                     else
                     {
                         var partial = rec.PartialResult();
-                        Console.WriteLine($"[DEBUG] Got partial: {partial}");
+                        try
+                        {
+                            var doc = JsonDocument.Parse(partial);
+                            if (doc.RootElement.TryGetProperty("partial", out var p) && !string.IsNullOrWhiteSpace(p.GetString()))
+                            {
+                                Console.WriteLine($"[DEBUG] Got partial: {partial}");
+                            }
+                        }
+                        catch { /* ignore parse errors */ }
                         if (partial != null && partial.ToLower().Contains(hotword.ToLower()))
                         {
                             detected = true;

@@ -20,6 +20,7 @@ namespace UI
             OverlayHotkeyTextBox.TextChanged += OverlayHotkeyTextBox_TextChanged;
             OverlayHotkeyTextBox.GotFocus += OverlayHotkeyTextBox_GotFocus;
             OverlayHotkeyTextBox.PreviewKeyDown += OverlayHotkeyTextBox_PreviewKeyDown;
+            UpdateVoskModelButton();
         }
 
         private void VoiceProviderComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -86,6 +87,66 @@ namespace UI
             // Notify MainWindow to re-register hotkey
             if (Application.Current.MainWindow is MainWindow mw)
                 mw.ReRegisterHotkey(hotkey);
+        }
+
+        private void UpdateVoskModelButton()
+        {
+            string largeModelPath = Path.Combine("src", "Voice", "vosk-model-plus");
+            bool largeModelExists = Directory.Exists(largeModelPath) && File.Exists(Path.Combine(largeModelPath, "README"));
+            if (_profile.VoskModel == VoskModelSize.Large)
+            {
+                VoskModelButton.Content = largeModelExists ? "Enable Small Model" : "Download and Enable Large Model";
+            }
+            else
+            {
+                VoskModelButton.Content = largeModelExists ? "Enable Large Model" : "Download and Enable Large Model";
+            }
+        }
+
+        private async void VoskModelButton_Click(object sender, RoutedEventArgs e)
+        {
+            string largeModelPath = Path.Combine("src", "Voice", "vosk-model-plus");
+            bool largeModelExists = Directory.Exists(largeModelPath) && File.Exists(Path.Combine(largeModelPath, "README"));
+            if (!largeModelExists)
+            {
+                // Download and extract
+                string url = "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip";
+                string zipPath = Path.Combine(Path.GetTempPath(), "vosk-model-en-us-0.22.zip");
+                VoskModelButton.Content = "Downloading...";
+                try
+                {
+                    using (var client = new System.Net.Http.HttpClient())
+                    using (var response = await client.GetAsync(url))
+                    using (var fs = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await response.Content.CopyToAsync(fs);
+                    }
+                    // Extract
+                    System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, Path.Combine("src", "Voice"), true);
+                    // Rename if needed
+                    string extracted = Path.Combine("src", "Voice", "vosk-model-en-us-0.22");
+                    if (Directory.Exists(extracted) && !Directory.Exists(largeModelPath))
+                        Directory.Move(extracted, largeModelPath);
+                    File.Delete(zipPath);
+                    MessageBox.Show("Large model downloaded and enabled.", "Success");
+                    _profile.VoskModel = VoskModelSize.Large;
+                    _profile.Save();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to download or extract model: {ex.Message}", "Error");
+                }
+            }
+            else
+            {
+                // Toggle model
+                if (_profile.VoskModel == VoskModelSize.Large)
+                    _profile.VoskModel = VoskModelSize.Small;
+                else
+                    _profile.VoskModel = VoskModelSize.Large;
+                _profile.Save();
+            }
+            UpdateVoskModelButton();
         }
     }
 } 

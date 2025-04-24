@@ -1,4 +1,4 @@
-⚡️ Ask.AI • Next-Gen Roadmap & Focused Backlog
+⚡️ Skai • Next-Gen Roadmap & Focused Backlog
 tickets:
 ───────────────────────────────────────────────
 1 ─ User Experience & UI Polish

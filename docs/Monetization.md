@@ -1,7 +1,7 @@
 Monetization & Pricing Strategy
-To ensure Ask.AI is sustainable, we need a monetization model that covers API costs and rewards the value provided, without deterring users. Here are the recommended approaches:
+To ensure Skai is sustainable, we need a monetization model that covers API costs and rewards the value provided, without deterring users. Here are the recommended approaches:
 Freemium Model: Offer a functional free tier to attract users, while gating heavy usage and advanced features behind a paid plan.
-Free Tier: Users can try Ask.AI with a limited number of queries per month (e.g. 20 queries) or with certain features disabled (perhaps vision and voice features off, text only). Another approach for free users is BYOK – Bring Your Own Key: they enter their own OpenAI API key, so we don’t pay for their usage. This essentially makes it free for us and them (besides their OpenAI costs). This was done in ShotSolve (“No account required… set up your API key and you’re ready to go.”​
+Free Tier: Users can try Skai with a limited number of queries per month (e.g. 20 queries) or with certain features disabled (perhaps vision and voice features off, text only). Another approach for free users is BYOK – Bring Your Own Key: they enter their own OpenAI API key, so we don’t pay for their usage. This essentially makes it free for us and them (besides their OpenAI costs). This was done in ShotSolve (“No account required… set up your API key and you’re ready to go.”​
 shotsolve.com
 ). However, requiring an API key up front can scare off non-technical users, so we might combine strategies: e.g. a free trial with our key for X queries, after which they either subscribe or plug in their own key to continue free.
 The free tier’s goal is to showcase the value (maybe allow vision on a few queries, etc.) to drive conversions to paid.

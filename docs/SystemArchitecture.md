@@ -1,5 +1,5 @@
 System Architecture & Components
-Ask.AI is designed as a client-centric application (a Windows desktop app) augmented by cloud AI services. Below is a breakdown of the major components and how they interact:
+Skai is designed as a client-centric application (a Windows desktop app) augmented by cloud AI services. Below is a breakdown of the major components and how they interact:
 Windows Client Application (Frontend UI)
 AI Integration Layer (LLM, Vision, Voice APIs)
 Automation Agent (OmniParser + Action Execution)

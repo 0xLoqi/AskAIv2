@@ -8,14 +8,16 @@
   </em>
 </div>
 
-A modern, privacy-conscious, and deeply personal desktop AI companion for Windows. Ask.AI is more than a chatbot—it's your always-on, voice-enabled, vision-capable, memory-empowered digital friend. Built with .NET 9, WPF, and OpenAI APIs, Ask.AI brings instant answers, playful conversation, and powerful productivity to your fingertips.
+# <img src="Assets/askai_logo.png" alt="Ask.AI Logo" width="48" style="vertical-align:middle;"> Ask.AI
+
+A modern, privacy-conscious, and deeply personal desktop AI companion for Windows. Skai is more than a chatbot—it's your always-on, voice-enabled, vision-capable, memory-empowered digital friend. Built with .NET 9, WPF, and OpenAI APIs, Skai brings instant answers, playful conversation, and powerful productivity to your fingertips.
 
 ---
 
-## ✨ Why Ask.AI?
+## ✨ Why Skai?
 - **Instant, global overlay:** Summon your AI from anywhere with <kbd>Alt</kbd>+<kbd>Space</kbd>.
 - **Personality & Memory:** Skai, your AI, learns about you, adapts, and remembers your preferences.
-- **Voice & Vision:** Speak, listen, and show—Ask.AI handles text, voice, and screenshots.
+- **Voice & Vision:** Speak, listen, and show—Skai handles text, voice, and screenshots.
 - **Privacy-first:** All memory is local and encrypted. You control your data.
 - **Beautiful, modern UX:** Minimal, fast, and distraction-free.
 

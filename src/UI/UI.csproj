@@ -24,4 +24,13 @@
     <NoWarn>$(NoWarn);NU1701;MSB3245;MSB3243</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="Assets/Sounds/listening_notify_start.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets/Sounds/listening_notify_stop.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

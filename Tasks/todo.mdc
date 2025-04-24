@@ -3,7 +3,11 @@ description:
 globs: 
 alwaysApply: false
 ---
-After about a minute, returning to the interface will put you in a totally fresh chat, this can later be changed in settings
+Features to add:
+
+Openrouter implementation
+
+After about a minute, returning to the interface should put you in a totally fresh chat, this can later be changed in settings
 
 voice activation
 
@@ -27,6 +31,83 @@ Update settings
 
 Update memory panel
 
-it does get rid of the preview, but it doesn't get rid of the preview until all the text is finished streaming back. It should do it as soon as it sends the screenshot+text away
+Titles of the chats displayed in the main chatbox
 
-Titles to the chats displayed in the main chatbox
+Change the pin button to just be a red triangle that lives in the corner
+
+Need a indicator that it's always listening
+
+=============================================================
+
+known issues:
+
+pin state doesn't work immediately-- have to click elsewhere and have it hide first one time smh
+
+doesn't work with RDP
+
+active windows not always changing properly for screenshot
+
+Personality is like a little too goofy
+
+scroll bars are invisible
+
+voice activation sound
+
+================================================================
+
+Additional Voice stuffs:
+
+Wait for “Listen” (or similar) Command:
+Overlay appears, but does NOT start dictation.
+Waits for a command like “Listen” or “I want to say something.”
+Pros: Prevents accidental input, feels more like talking to an assistant.
+Cons: Adds one extra step for every interaction.
+Anthropomorphic/Conversational Option:
+Overlay appears and says (or displays):
+“Hi! What can I do for you?”
+User can say:
+“Listen” (to dictate a message)
+“Look” / “Check this out” (to attach screenshot)
+“Help” (to get help)
+“Nevermind” (to cancel)
+Recommendation:
+If you want a more “assistant-like” feel, Option B is better.
+If you want pure speed, stick with Option A.
+2. Anthropomorphic Command Phrasing
+Screenshot:
+Accept “Look”, “Check this out”, “Screenshot”, “See this”, etc.
+Dictation:
+Accept “Listen”, “Take a note”, “Write this”, etc.
+Cancel:
+“Nevermind”, “Cancel”, “Forget it”, “Stop”, etc.
+This makes the assistant feel more human and flexible.
+3. Command Handling During Dictation
+Commands like “send”, “clear”, “cancel” should only be recognized if:
+They are the only thing said (e.g., “send”)
+Or at the end of a phrase (e.g., “remind me to call John send”)
+Commands like “look”, “screenshot” should only work if not in the middle of dictation (or, if you want, you can allow “add a screenshot” mid-dictation).
+Do NOT trigger commands if they appear in the middle of a normal sentence.
+E.g., “I want to send a screenshot to John” should not trigger “send” or “screenshot”.
+4. Anything Else?
+Confirmation: For destructive actions (“clear”, “cancel”), consider a quick confirmation: “Are you sure?” (optional for MVP).
+Help: Always available, lists all commands.
+Feedback: Visual and/or audio for every action.
+Timeout: If no command is given after activation, overlay can auto-dismiss or prompt again.
+5. Sample Flow (Option B: Wait for Command)
+User: “Sky”
+Overlay: “Hi! What can I do for you?” (shows options)
+User: “Listen”
+→ Overlay: “I’m listening…” (starts dictation)
+User: “Remind me to call John at 5pm send”
+→ Message sent, overlay closes
+OR
+User: “Look”
+→ Screenshot attached
+OR
+User: “Nevermind”
+→ Overlay closes
+6. Implementation Plan
+On hotword, show overlay and wait for a command (“listen”, “look”, “help”, “nevermind”).
+Only start dictation if “listen” (or similar) is spoken.
+Only allow “send”, “clear”, “cancel” during dictation, and only if at end of phrase.
+Use Regex to robustly detect commands at end of phrase.

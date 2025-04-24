@@ -130,6 +130,19 @@
                     <ToggleButton x:Name="PinButton" Grid.Column="5" Width="24" Height="24" Margin="0,4,8,0" VerticalAlignment="Top" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontFamily="Segoe Fluent Icons" FontSize="16" Content="&#xE718;" ToolTip="Pin overlay" Foreground="White" IsChecked="True" Style="{StaticResource PinButtonStyle}" Checked="PinButton_Checked" Unchecked="PinButton_Unchecked"/>
                 </Grid>
             </Border>
+            <!-- Listening/Dication Status Label -->
+            <Label x:Name="ListeningStatusLabel"
+                   Grid.Row="0"
+                   Content=""
+                   Visibility="Collapsed"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   FontSize="16"
+                   Foreground="Orange"
+                   Background="#222"
+                   Padding="8,2"
+                   Margin="0,36,0,0"
+                   Panel.ZIndex="1000"/>
             <!-- Screenshot Preview Pane (large, visually distinct, not in chat) -->
             <Border x:Name="ScreenshotPreviewPane" Grid.Row="1" Background="#222" CornerRadius="12" Padding="8" Margin="16,8,16,8" Visibility="Collapsed" VerticalAlignment="Top" Panel.ZIndex="100">
                 <Grid>

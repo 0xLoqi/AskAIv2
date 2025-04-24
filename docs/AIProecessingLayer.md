@@ -1,6 +1,6 @@
 AI Processing Layer (LLM & Vision)
 This layer handles calls to AI models for both text and image understanding:
-OpenAI GPT-4 (Language & Vision): Ask.AI uses OpenAI’s GPT-4 API as the core brain for understanding and responding. GPT-4 is chosen for its superior reasoning and ability to process images (Vision) compared to smaller models. As of 2024, OpenAI has made GPT-4 with Vision generally available via API​
+OpenAI GPT-4 (Language & Vision): Skai uses OpenAI’s GPT-4 API as the core brain for understanding and responding. GPT-4 is chosen for its superior reasoning and ability to process images (Vision) compared to smaller models. As of 2024, OpenAI has made GPT-4 with Vision generally available via API​
 venturebeat.com
 , allowing a single API call to include both text and an image. We will leverage this by sending the conversation history (as text) along with any relevant screenshot (as binary/image data) to the API. GPT-4 then returns a response that incorporates both modalities. This unified approach is efficient since “previously, developers had to use separate models for text and images, but now, with just one API call, the model can analyze images and apply reasoning.”​
 venturebeat.com
@@ -12,7 +12,7 @@ learn.microsoft.com
 Use of GPT-3.5 (Optional): For less demanding tasks or to save cost, we can utilize GPT-3.5 Turbo for certain queries (especially if no image involved). GPT-3.5 is faster and much cheaper ($0.002/1K tokens vs GPT-4’s $0.03-0.06/1K​
 help.openai.com
 ). The system could automatically decide: e.g. for very simple Q&A or if the user is on a free tier, use GPT-3.5; for complex or vision queries, use GPT-4. This would be transparent to the user except perhaps a slight difference in answer quality. In early MVP, however, we might stick to GPT-4 for consistency and only add such optimizations if needed.
-Whisper Speech-to-Text: For voice input, Ask.AI will utilize Whisper, which is OpenAI’s advanced speech recognition model. Two implementations are possible:
+Whisper Speech-to-Text: For voice input, Skai will utilize Whisper, which is OpenAI’s advanced speech recognition model. Two implementations are possible:
 Cloud STT (Whisper API): Easiest integration – send the recorded audio to OpenAI’s Whisper API and get text back. Whisper’s large-v2 model via API is priced at $0.006/min of audio​
 openai.com
 , which is very affordable. The app would record audio (in chunks or the whole utterance), then upload it to the API. This yields accurate transcripts with punctuation. The turnaround is fairly quick for short utterances (a few seconds).
@@ -21,14 +21,14 @@ Voice Processing Flow: When the hotkey is held, the app continuously listens. We
 Response Handling: The AI’s answer, once received (as text), is displayed in the chat UI. If the answer includes any action instructions (for the agent) or image references (like describing the image), the client will parse that. For example, if using OpenAI’s new function calling abilities, GPT-4 might return a JSON with a desired action (click coordinates or a UI element ID). The client would then prompt the user “Skai can perform X for you – proceed?” and on confirmation, invoke the automation routines. The app will also handle streaming of responses if supported (showing the answer text as it’s being generated for a faster feel).
 
 
-Example: The image above shows a similar assistant (ShotSolve on macOS) analyzing a screenshot to provide feedback on a webpage design. Ask.AI will integrate GPT-4 Vision in a Windows environment to achieve such context-aware help. The UI presents the screenshot alongside the query (“Give me feedback to improve this landing page”), and GPT-4 Vision responds with suggestions in a chat format. Ask.AI’s chat overlay will likewise allow users to ask questions about what’s on their screen and get instant insights or answers grounded in the visual context.
+Example: The image above shows a similar assistant (ShotSolve on macOS) analyzing a screenshot to provide feedback on a webpage design. Skai will integrate GPT-4 Vision in a Windows environment to achieve such context-aware help. The UI presents the screenshot alongside the query (“Give me feedback to improve this landing page”), and GPT-4 Vision responds with suggestions in a chat format. Skai’s chat overlay will likewise allow users to ask questions about what’s on their screen and get instant insights or answers grounded in the visual context.
 Vision Context and OmniParser (Screen Parsing)
-A key innovation for Ask.AI is its ability to not just see pixels, but understand the structure of what’s on screen. This is where Microsoft’s OmniParser comes into play: 
+A key innovation for Skai is its ability to not just see pixels, but understand the structure of what’s on screen. This is where Microsoft’s OmniParser comes into play: 
 
 Above: OmniParser can interpret a UI screenshot and output the textual content and identifiable interface elements. For example, in the mobile UI screenshots, it extracted visible text like “Twitter”, “Journal” and recognized icons (e.g., an icon that looks like “a phone call or messaging application”)​
 huggingface.co
 . This structured understanding lets an AI agent uniquely refer to parts of the UI (like “Icon ID 27” for the messaging app icon) and know their function.
-How OmniParser is Used: When Ask.AI is in agent mode (i.e., the user expects it to perform an action on the UI), the application will:
+How OmniParser is Used: When Skai is in agent mode (i.e., the user expects it to perform an action on the UI), the application will:
 Capture a screenshot of the relevant application window (or the full desktop if needed).
 Run the OmniParser model on this image locally. OmniParser actually consists of two ML models – a YOLOv8-based detector for interactive regions (buttons, icons, fields) and a BLIP-2-based captioner for describing icon semantics​
 huggingface.co
@@ -37,11 +37,11 @@ Convert this output into a prompt context for GPT-4. For example: “On screen: 
 microsoft.github.io
 .)
 Ask GPT-4 (with this context plus the user’s request) to determine the actions needed. We can utilize OpenAI’s function calling feature to have GPT return a structured plan, e.g. {"click": 1} meaning “click Button#1 (OK)” or {"type": {"field": 2, "text": "Alice"}} meaning “type 'Alice' into TextBox#2”.
-Action Execution (Selenium & OS Automation): Once the plan is obtained, the Ask.AI client carries it out:
+Action Execution (Selenium & OS Automation): Once the plan is obtained, the Skai client carries it out:
 For web actions: Selenium WebDriver will be used to drive a browser. Selenium is a popular framework that “enables web browser automation”​
 en.wikipedia.org
  – essentially controlling a browser like a user would. We can use the Chrome or Edge WebDriver to interact with web pages. If the target UI is a web app, OmniParser’s elements can often be mapped to DOM elements (e.g., by text or index), or we might directly instruct Selenium (via element XPaths or CSS selectors, if we have them). For instance, to click a button identified by OmniParser as “OK”, we find a DOM button with text “OK” and call Selenium’s click.
 For desktop app actions: Selenium won’t work (it’s for browsers). In the future, we might use Windows UI Automation APIs or tools like AutoHotkey/PowerShell scripts to click native app coordinates. However, initial agent focus will be on web (since Selenium excels there and many tasks – email, form filling, web queries – are browser-based).
 Safety: Before performing any action, the assistant will always ask user confirmation (e.g., “🤖 Skai: Should I click ‘OK’ on the installer dialog?”). This way, users stay in control of any automation.
-Example Flow: Suppose a user opens an online form and says “Skai, fill this form with my info.” Ask.AI would take a screenshot of the form, use OmniParser to extract that there are fields like Name, Email, Address. It might then prompt GPT-4 with “User wants to fill the form with their info. Screen elements: {Field1: Name, Field2: Email, …}. The user’s name is John Doe, email john@example.com (if known from user profile).” GPT-4 then returns an action plan to input “John Doe” in Field1, “john@example.com” in Field2, etc. Ask.AI executes these via Selenium (if it’s a web form) by locating input elements and sending keystrokes. In seconds, the form is filled – saving the user time.
-Overall, through OmniParser and automation, Ask.AI moves beyond just answering questions to taking actions. This turns it into a quasi-RPA (robotic process automation) assistant for the user’s personal tasks.
+Example Flow: Suppose a user opens an online form and says “Skai, fill this form with my info.” Skai would take a screenshot of the form, use OmniParser to extract that there are fields like Name, Email, Address. It might then prompt GPT-4 with “User wants to fill the form with their info. Screen elements: {Field1: Name, Field2: Email, …}. The user’s name is John Doe, email john@example.com (if known from user profile).” GPT-4 then returns an action plan to input “John Doe” in Field1, “john@example.com” in Field2, etc. Skai executes these via Selenium (if it’s a web form) by locating input elements and sending keystrokes. In seconds, the form is filled – saving the user time.
+Overall, through OmniParser and automation, Skai moves beyond just answering questions to taking actions. This turns it into a quasi-RPA (robotic process automation) assistant for the user’s personal tasks.

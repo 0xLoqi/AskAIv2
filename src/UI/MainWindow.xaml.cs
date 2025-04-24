@@ -28,7 +28,7 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hWnd, int id);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
 
-    private Overlay? _overlayWindow;
+    public Overlay? _overlayWindow;
     private HwndSource? _source;
     private IntPtr _lastActiveWindow = IntPtr.Zero;
     private string _currentHotkey = "Alt+Space";
@@ -82,7 +82,6 @@ public partial class MainWindow : Window
             }
         }
         _overlayWindow = new Overlay(_lastActiveWindow, screenshotPath);
-        _overlayWindow.Hide();
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -91,6 +90,8 @@ public partial class MainWindow : Window
         if (_overlayWindow != null)
         {
             _overlayWindow.Owner = this;
+            _overlayWindow.Show();
+            _overlayWindow.Activate();
         }
         var helper = new WindowInteropHelper(this);
         _source = HwndSource.FromHwnd(helper.Handle);
