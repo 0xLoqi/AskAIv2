@@ -1,6 +1,7 @@
 <div align="center">
-  <img src="src/UI/Assets/askai_logo.png" alt="ask.ai logo" width="400"><br>
+  <img src="assets/branding/skai_portrait.png" alt="Skai mascot portrait" width="240" style="border-radius:16px;">
   <br>
+   <br>
   <b>Ask anything, anywhere, anytime.</b>
   <br>
   <em>
@@ -12,11 +13,6 @@
 
 A modern, privacy-conscious, and deeply personal desktop AI companion for Windows. Skai is more than a chatbot—it's your always-on, voice-enabled, vision-capable, memory-empowered digital friend. Built with .NET 9, WPF, and OpenAI APIs, Skai brings instant answers, playful conversation, and powerful productivity to your fingertips.
 
----
-
-<div align="center">
-  <img src="assets/branding/skai_portrait.png" alt="Skai mascot portrait" width="240" style="border-radius:16px;">
-</div>
 
 ---
 
