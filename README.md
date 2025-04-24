@@ -39,6 +39,10 @@ A modern, privacy-conscious, and deeply personal desktop AI companion for Window
 ## 🖼️ Screenshots
 <!-- Add screenshots or GIFs here for best effect -->
 
+<img src="assets/screenshots/example_tradingview.png" alt="TradingView Screenshot Example" width="400">
+
+<img src="assets/screenshots/example_paint.net.png" alt="Paint.NET Screenshot Example" width="400">
+
 ---
 
 ## 🔧 Setup Instructions (From Zero to Skai)
@@ -47,7 +51,7 @@ A modern, privacy-conscious, and deeply personal desktop AI companion for Window
 - [.NET SDK 9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - Optional: Visual Studio 2022+ with WPF support or VS Code with C# extension
 
-> **Heads-up:** If you’ve installed older .NET versions and get weird errors, try deleting `%AppData%\NuGet\NuGet.Config` and running:
+> **Heads-up:** If you've installed older .NET versions and get weird errors, try deleting `%AppData%\NuGet\NuGet.Config` and running:
 ```bash
 dotnet restore
 ```
@@ -64,7 +68,7 @@ Inside `src/Core`, create a file called `.env`:
 ```env
 OPENAI_API_KEY=your-openai-key-here
 ```
-> You’ll need an OpenAI account + key. Sign up at [platform.openai.com](https://platform.openai.com/)
+> You'll need an OpenAI account + key. Sign up at [platform.openai.com](https://platform.openai.com/)
 
 ### 4. **Build and Launch**
 ```bash
@@ -73,7 +77,7 @@ dotnet build
 dotnet run --project src/UI/UI.csproj
 ```
 
-> ✅ If it worked, you’ll see the Skai overlay. Simply call Skai by name or press <kbd>Alt</kbd> + <kbd>Space</kbd>from anywhere to start chatting.
+> ✅ If it worked, you'll see the Skai overlay. Simply call Skai by name or press <kbd>Alt</kbd> + <kbd>Space</kbd>from anywhere to start chatting.
 
 ---
 
