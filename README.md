@@ -8,8 +8,6 @@
   </em>
 </div>
 
-# <img src="src/UI/Assets/askai_logo.png" alt="Ask.AI Logo" width="48" style="vertical-align:middle;"> Ask.AI
-
 A modern, privacy-conscious, and deeply personal desktop AI companion for Windows. Skai is more than a chatbot—it's your always-on, voice-enabled, vision-capable, memory-empowered digital friend. Built with .NET 9, WPF, and OpenAI APIs, Skai brings instant answers, playful conversation, and powerful productivity to your fingertips.
 
 ---
