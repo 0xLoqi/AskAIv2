@@ -1104,10 +1104,12 @@ namespace UI
             string modelPath = Environment.GetEnvironmentVariable("VOSK_MODEL_PATH") ?? @"C:\Users\Elijah\Documents\Coding Projects\AskAI\src\Voice\vosk-model";
             ListeningStatusLabel.Content = "Listening...";
             ListeningStatusLabel.Visibility = Visibility.Visible;
-            Task.Run(() => Voice.VoskHotwordListener.ListenForHotword(modelPath, "computer", () =>
-            {
-                Dispatcher.Invoke(() => StartVoiceDictationByHotword());
-            }));
+            Task.Run(() => Voice.VoskHotwordListener.ListenForHotword(
+                modelPath,
+                "computer",
+                () => { Dispatcher.Invoke(() => StartVoiceDictationByHotword()); },
+                () => { Dispatcher.Invoke(() => PlayUISound("listening_notify_start.wav")); }
+            ));
         }
 
         public void StartVoiceDictationByHotword()

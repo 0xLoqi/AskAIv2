@@ -71,7 +71,7 @@ namespace Voice
 
     public static class VoskHotwordListener
     {
-        public static void ListenForHotword(string modelPath, string hotword = "computer", Action onHotwordDetected = null!)
+        public static void ListenForHotword(string modelPath, string hotword = "computer", Action onHotwordDetected = null!, Action? onReady = null)
         {
             Console.WriteLine($"[DEBUG] Entered ListenForHotword. modelPath={Path.GetFullPath(modelPath)} hotword={hotword}");
             if (!Directory.Exists(modelPath))
@@ -93,7 +93,6 @@ namespace Voice
                     if (rec.AcceptWaveform(e.Buffer, e.BytesRecorded))
                     {
                         var result = rec.Result();
-                        Console.WriteLine($"[DEBUG] Got result: {result}");
                         if (result != null && result.ToLower().Contains(hotword.ToLower()))
                         {
                             detected = true;
@@ -128,6 +127,7 @@ namespace Voice
             };
             Console.WriteLine($"[DEBUG] Starting recording. Listening for hotword '{hotword}'...");
             waveIn.StartRecording();
+            onReady?.Invoke();
             while (!detected) System.Threading.Thread.Sleep(100);
             Console.WriteLine("[DEBUG] Exiting ListenForHotword.");
         }
