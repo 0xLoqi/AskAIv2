@@ -98,6 +98,7 @@ dotnet run --project src/UI/UI.csproj
 ## 🤝 Contributing
 - PRs and issues welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Looking for help with: UI polish, plugin system, accessibility, and more.
+- Equity Incentives: Contributors may be eligible for a percentage of equity based on their contributions. Please contact me for details.
 
 ---
 
