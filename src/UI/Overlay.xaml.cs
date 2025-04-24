@@ -1212,32 +1212,29 @@ namespace UI
 
         private void PlayUISound(string soundName)
         {
-            try
+            // Determine the full path of the sound file relative to the app's output directory
+            var baseName = Path.GetFileNameWithoutExtension(soundName);
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory; // bin/Debug/netX/
+            var soundsDir = Path.Combine(baseDir, "Assets", "Sounds");
+            var wavPath = Path.Combine(soundsDir, baseName + ".wav");
+            var mp3Path = Path.Combine(soundsDir, baseName + ".mp3");
+            var soundPath = File.Exists(wavPath) ? wavPath : mp3Path;
+            if (!File.Exists(soundPath))
+                return;
+            // Play sound on background thread to avoid blocking UI
+            Task.Run(() =>
             {
-                // Prefer .wav, fallback to .mp3
-                string baseName = Path.GetFileNameWithoutExtension(soundName);
-                string wavPath = Path.Combine("Assets", "Sounds", baseName + ".wav");
-                string mp3Path = Path.Combine("Assets", "Sounds", baseName + ".mp3");
-                string soundPath = File.Exists(wavPath) ? wavPath : mp3Path;
-                if (!File.Exists(soundPath))
+                try
                 {
-                    MessageBox.Show($"Sound file not found: {soundPath}");
-                    return;
+                    using var audioFile = new NAudio.Wave.AudioFileReader(soundPath);
+                    using var outputDevice = new NAudio.Wave.WaveOutEvent();
+                    outputDevice.Init(audioFile);
+                    outputDevice.Play();
+                    while (outputDevice.PlaybackState == NAudio.Wave.PlaybackState.Playing)
+                        System.Threading.Thread.Sleep(50);
                 }
-                MessageBox.Show($"Playing sound: {soundPath}");
-                using var audioFile = new NAudio.Wave.AudioFileReader(soundPath);
-                using var outputDevice = new NAudio.Wave.WaveOutEvent();
-                outputDevice.Init(audioFile);
-                outputDevice.Play();
-                while (outputDevice.PlaybackState == NAudio.Wave.PlaybackState.Playing)
-                {
-                    System.Threading.Thread.Sleep(50);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Sound error: {ex.Message}");
-            }
+                catch { /* Silent */ }
+            });
         }
     }
 } 

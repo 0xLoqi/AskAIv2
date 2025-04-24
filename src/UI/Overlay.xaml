@@ -122,7 +122,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Ask.AI" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
+                    <TextBlock Text="Skai" Foreground="#fff" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0" Grid.Column="0"/>
                     <TextBlock x:Name="SloganText" Grid.Column="1" Foreground="#bbb" FontStyle="Italic" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" Text=""/>
                     <Button x:Name="NewChatButton" Grid.Column="2" Style="{StaticResource IconButtonStyle}" Content="&#xE710;" ToolTip="New Chat" Click="NewChatButton_Click"/>
                     <Button x:Name="HistoryButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}" Content="&#xE823;" ToolTip="Chat History" Click="HistoryButton_Click"/>

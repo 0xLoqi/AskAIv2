@@ -41,21 +41,39 @@ A modern, privacy-conscious, and deeply personal desktop AI companion for Window
 
 ---
 
-## ⚡ Quick Start
-1. **Clone the repo:**
-   ```sh
-   git clone https://github.com/YOUR-USERNAME/AskAI.git
-   cd AskAI
-   ```
-2. **Set up OpenAI API key:**
-   - Create a `.env` file in `src/Core` with:
-     ```
-     OPENAI_API_KEY=your-key-here
-     ```
-3. **Build and run:**
-   ```sh
-   dotnet run --project src/UI/UI.csproj
-   ```
+## 🔧 Setup Instructions (From Zero to Skai)
+
+### 1. **Install Prerequisites**
+- [.NET SDK 9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- Optional: Visual Studio 2022+ with WPF support or VS Code with C# extension
+
+> **Heads-up:** If you’ve installed older .NET versions and get weird errors, try deleting `%AppData%\NuGet\NuGet.Config` and running:
+```bash
+dotnet restore
+```
+
+### 2. **Clone the Repo**
+Use your preferred CLI tool to clone the repository:
+```bash
+git clone https://github.com/YOUR-USERNAME/AskAI.git
+cd AskAI
+```
+
+### 3. **Set Up Your API Key**
+Inside `src/Core`, create a file called `.env`:
+```env
+OPENAI_API_KEY=your-openai-key-here
+```
+> You’ll need an OpenAI account + key. Sign up at [platform.openai.com](https://platform.openai.com/)
+
+### 4. **Build and Launch**
+```bash
+dotnet restore
+dotnet build
+dotnet run --project src/UI/UI.csproj
+```
+
+> ✅ If it worked, you’ll see the Skai overlay. Simply call Skai by name or press <kbd>Alt</kbd> + <kbd>Space</kbd>from anywhere to start chatting.
 
 ---
 
