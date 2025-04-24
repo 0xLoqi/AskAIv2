@@ -39,9 +39,18 @@ A modern, privacy-conscious, and deeply personal desktop AI companion for Window
 ## 🖼️ Screenshots
 <!-- Add screenshots or GIFs here for best effect -->
 
-<img src="assets/screenshots/example_tradingview.png" alt="TradingView Screenshot Example" width="400">
-
-<img src="assets/screenshots/example_paint.net.png" alt="Paint.NET Screenshot Example" width="400">
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/screenshots/example_tradingview.png" alt="TradingView Screenshot Example" width="400"><br>
+      <sub>TradingView: AskAI overlay in action</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screenshots/example_paint.net.png" alt="Paint.NET Screenshot Example" width="400"><br>
+      <sub>Paint.NET: Using AskAI with creative tools</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
